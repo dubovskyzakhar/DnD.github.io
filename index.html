@@ -17,20 +17,15 @@
     </nav>
 
     <main id="battle-tab" class="tab-content active">
-        <div class="battle-grid">
-            <div class="column characters-col">
-                <h2>Герои</h2>
-                <div id="character-list" class="sortable-list"></div>
+        <div class="battle-grid" style="display: flex; gap: 20px; justify-content: space-around;">
+            <div class="column">
+                <h2 style="color: var(--gold); text-align: center;">Герои</h2>
+                <div id="character-list"></div>
             </div>
 
-            <div class="column monsters-col">
-                <h2>Противники</h2>
+            <div class="column">
+                <h2 style="color: var(--gold); text-align: center;">Противники</h2>
                 <div id="monster-list" class="monster-grid-inner"></div>
-            </div>
-
-            <div class="column status-dock">
-                <h2>Статусы</h2>
-                <div id="available-statuses" class="status-items"></div>
             </div>
         </div>
     </main>
@@ -40,19 +35,13 @@
             <div class="config-card">
                 <h3>Добавить Героя (JSON)</h3>
                 <input type="file" id="import-json" accept=".json">
+                <button onclick="importCharacter()">Призвать героя</button>
             </div>
 
             <div class="config-card">
-                <h3>Бестиарий (dnd.su)</h3>
-                <input type="text" id="monster-url" placeholder="Вставьте ссылку...">
-                <button onclick="addMonsterByUrl()">Призвать</button>
-            </div>
-
-            <div class="config-card">
-                <h3>Создать Статус</h3>
-                <input type="text" id="status-name" placeholder="Название">
-                <input type="file" id="status-icon" accept="image/*">
-                <button onclick="createNewStatus()">Создать</button>
+                <h3>Бестиарий (ttg.club / dnd.su)</h3>
+                <input type="text" id="monster-url" placeholder="Вставьте ссылку на монстра...">
+                <button onclick="addMonsterByUrl()">Призвать монстра</button>
             </div>
 
             <div class="config-card">
