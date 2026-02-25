@@ -91,10 +91,58 @@ body {
     gap: 10px;
 }
 
+/* Улучшенная читаемость в настройках */
 .config-card {
-    background: rgba(255,255,255,0.1);
+    background: rgba(0, 0, 0, 0.6); /* Более темный фон для контраста с белым текстом */
     padding: 20px;
-    margin: 10px;
+    margin: 15px;
     border: 1px solid var(--gold);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    color: #ffffff; /* Чистый белый цвет для основного текста */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.config-card h3 {
+    color: var(--gold); /* Заголовки оставляем золотыми для стиля */
+    margin-top: 0;
+    text-shadow: 1px 1px 2px black; /* Тень, чтобы золото не терялось */
+    font-size: 1.6rem;
+}
+
+.config-card label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #f0f0f0; /* Светло-серый/белый */
+}
+
+/* Стили для полей ввода, чтобы они выделялись */
+.config-card input[type="text"], 
+.config-card input[type="file"] {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--gold);
+    padding: 8px;
+    border-radius: 4px;
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    color: #000; /* Текст внутри полей — черный */
+}
+
+.config-card button {
+    background: var(--gold);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-family: 'Almendra', serif;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.3s;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.config-card button:hover {
+    background: #e6bc73; /* Чуть более яркий золотой при наведении */
+    transform: translateY(-2px);
 }
