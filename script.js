@@ -1,6 +1,7 @@
 let characters = JSON.parse(localStorage.getItem('dnd_chars')) || [];
 let monsters = [];
 let statuses = JSON.parse(localStorage.getItem('dnd_statuses')) || [];
+const API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrRh3FkvIKwn_HOEwXMwC5nqY70dmuCAz-yMwHkUqbqTeVHZb7UQTC3MbNXB8jdMtLK1S5iqsVOltRr9NGEOJmNyCvulRR3d-1SdvghmgxmEXZroHFTBHF2cB7hArL511erdA7XMW-tf39uQoBm30X2ja5OLYz_yaInGzrto9vkAhBcXQpZ3aeMec9aC4NenMM6LqwizKRWR92uathyJMSFFc1AYu4MeRwUZb8U-Ma_yq_7Z0qIXj-Bt-zprm7svgbwN19dsfuxrKmkWP81-wAxgM2Vlw3gwMS96df7E&lib=M2-HEIrDR4JygxZ_eSAhtnqM9Vk67ktfh"
 
 // Переключение табов
 function switchTab(tabId) {
@@ -145,3 +146,4 @@ async function addMonsterByUrl() {
         alert("Не удалось загрузить данные. Проверь ссылку.");
     }
 }
+
