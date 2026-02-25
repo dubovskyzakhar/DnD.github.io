@@ -1,39 +1,26 @@
-// 1. ИНИЦИАЛИЗАЦИЯ ДАННЫХ
 let characters = JSON.parse(localStorage.getItem('dnd_chars')) || [];
 let monsters = [];
-let statuses = JSON.parse(localStorage.getItem('dnd_statuses')) || [];
 
-// ВАЖНО: Используй URL, который заканчивается на /exec
-const API_URL = "https://script.google.com/macros/s/AKfycbyR6...ТВОЙ_ID.../exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
-// Переключение табов
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId + '-tab').classList.add('active');
 }
 
-// 2. РЕНДЕР ПЕРСОНАЖЕЙ И МОНСТРОВ
 function renderCharacters() {
     const list = document.getElementById('character-list');
     list.innerHTML = '';
     characters.sort((a, b) => b.init - a.init);
-
     characters.forEach((char, index) => {
-        const card = document.createElement('div');
-        card.className = 'character-card';
-        card.innerHTML = `
-            <img src="${char.img || 'https://via.placeholder.com/60'}" class="avatar">
-            <div>
-                <strong>${char.name}</strong><br>
-                <span>Инициатива: ${char.init}</span>
-            </div>
-            <div class="hp-box">
-                HP: <span class="hp-value" onwheel="changeHP(event, 'char', ${index})">
-                    ${char.currentHp}/${char.maxHp}
-                </span>
-            </div>
+        const div = document.createElement('div');
+        div.className = 'character-card';
+        div.innerHTML = `
+            <img src="${char.img || ''}" class="avatar">
+            <div><strong>${char.name}</strong><br>Инициатива: ${char.init}</div>
+            <div class="hp-box">HP: <span class="hp-value" onwheel="changeHP(event, 'char', ${index})">${char.currentHp}/${char.maxHp}</span></div>
         `;
-        list.appendChild(card);
+        list.appendChild(div);
     });
 }
 
@@ -41,45 +28,38 @@ function renderMonsters() {
     const list = document.getElementById('monster-list');
     list.innerHTML = '';
     monsters.forEach((m, index) => {
-        const card = document.createElement('div');
-        card.className = 'character-card monster-theme';
-        card.innerHTML = `
-            <img src="${m.img || 'https://via.placeholder.com/60'}" class="avatar">
-            <div>
-                <strong>${m.name}</strong><br>
-                <span>Инициатива: ${m.init}</span>
-            </div>
-            <div class="hp-box">
-                HP: <span class="hp-value" onwheel="changeHP(event, 'monster', ${index})">
-                    ${m.currentHp}/${m.maxHp}
-                </span>
-            </div>
+        const div = document.createElement('div');
+        div.className = 'character-card';
+        div.style.borderLeft = "8px solid #a00"; // Выделяем монстров
+        div.innerHTML = `
+            <img src="${m.img || ''}" class="avatar">
+            <div><strong>${m.name}</strong><br>Инициатива: ${m.init}</div>
+            <div class="hp-box">HP: <span class="hp-value" onwheel="changeHP(event, 'monster', ${index})">${m.currentHp}/${m.maxHp}</span></div>
         `;
-        list.appendChild(card);
+        list.appendChild(div);
     });
 }
 
-// 3. ИЗМЕНЕНИЕ HP
 function changeHP(e, type, index) {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
-    if(type === 'char') {
-        characters[index].currentHp = Math.max(0, parseInt(characters[index].currentHp) + delta);
-    } else {
-        monsters[index].currentHp = Math.max(0, parseInt(monsters[index].currentHp) + delta);
-    }
+    if(type === 'char') characters[index].currentHp = Math.max(0, parseInt(characters[index].currentHp) + delta);
+    else monsters[index].currentHp = Math.max(0, parseInt(monsters[index].currentHp) + delta);
     renderCharacters();
     renderMonsters();
     saveData();
 }
 
-// 4. ИМПОРТ ПЕРСОНАЖА (Long Story Short)
-document.getElementById('import-json').addEventListener('change', function(e) {
+// ПРИЗВАТЬ ГЕРОЯ ИЗ JSON
+async function importCharacter() {
+    const fileInput = document.getElementById('import-json');
+    if (!fileInput.files[0]) return alert("Выбери файл!");
+
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = async (e) => {
         try {
-            const raw = JSON.parse(event.target.result);
-            const data = JSON.parse(raw.data); // Двойной парсинг для LSS
+            const raw = JSON.parse(e.target.result);
+            const data = JSON.parse(raw.data); // Парсим вложенную строку 'data'
 
             const newChar = {
                 name: data.name?.value || "Герой",
@@ -93,16 +73,16 @@ document.getElementById('import-json').addEventListener('change', function(e) {
             renderCharacters();
             saveData();
             sendDataToSheets('Characters', 'add', [newChar.name, newChar.maxHp, newChar.currentHp, newChar.init, newChar.img]);
-        } catch (err) {
-            alert("Ошибка в формате файла Long Story Short");
-        }
+            alert("Герой призван!");
+        } catch (err) { alert("Ошибка JSON!"); }
     };
-    reader.readAsText(e.target.files[0]);
-});
+    reader.readAsText(fileInput.files[0]);
+}
 
-// 5. ПАРСИНГ МОНСТРА (ttg.club)
+// ПРИЗВАТЬ МОНСТРА
 async function addMonsterByUrl() {
     const url = document.getElementById('monster-url').value;
+    if(!url) return;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
     
     try {
@@ -113,54 +93,46 @@ async function addMonsterByUrl() {
         const name = doc.querySelector('h1')?.innerText || "Монстр";
         const hpMatch = data.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i);
         const hp = hpMatch ? parseInt(hpMatch[1]) : 50;
-
         let imgSrc = doc.querySelector('.image-container img')?.src || "";
         if (imgSrc.includes('origin/')) imgSrc = "https://5e14.ttg.club/" + imgSrc.split('origin/')[1];
 
-        const newMonster = {
-            name: name.trim(),
-            maxHp: hp,
-            currentHp: hp,
-            init: Math.floor(Math.random() * 20) + 1,
-            img: imgSrc
-        };
-
-        monsters.push(newMonster);
+        const newM = { name, maxHp: hp, currentHp: hp, init: Math.floor(Math.random() * 20) + 1, img: imgSrc };
+        monsters.push(newM);
         renderMonsters();
-        sendDataToSheets('Monsters', 'add', [newMonster.name, newMonster.maxHp, newMonster.currentHp, newMonster.init, newMonster.img]);
-    } catch (e) {
-        alert("Ошибка загрузки монстра");
-    }
+        sendDataToSheets('Monsters', 'add', [newM.name, newM.maxHp, newM.currentHp, newM.init, newM.img]);
+    } catch (e) { alert("Ошибка загрузки!"); }
 }
 
-// 6. СИСТЕМНЫЕ ФУНКЦИИ
 async function sendDataToSheets(sheet, action, data) {
-    fetch(API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify({ sheet, action, data })
-    });
+    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ sheet, action, data }) });
 }
 
-function saveData() {
-    localStorage.setItem('dnd_chars', JSON.stringify(characters));
-}
+function saveData() { localStorage.setItem('dnd_chars', JSON.stringify(characters)); }
 
-// Инициализация Drag-and-Drop
-new Sortable(document.getElementById('character-list'), {
-    animation: 150,
-    onEnd: (evt) => {
-        const movedItem = characters.splice(evt.oldIndex, 1)[0];
-        characters.splice(evt.newIndex, 0, movedItem);
-        if (characters[evt.newIndex - 1]) characters[evt.newIndex].init = characters[evt.newIndex - 1].init - 1;
-        renderCharacters();
-        saveData();
-    }
-});
+function changeBackground(event) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const url = reader.result;
+        document.getElementById('main-bg').style.backgroundImage = `url(${url})`;
+        localStorage.setItem('dnd_bg', url);
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
 
 window.onload = () => {
     const savedBg = localStorage.getItem('dnd_bg');
     if(savedBg) document.getElementById('main-bg').style.backgroundImage = `url(${savedBg})`;
     renderCharacters();
     renderMonsters();
+    
+    new Sortable(document.getElementById('character-list'), {
+        animation: 150,
+        onEnd: (evt) => {
+            const moved = characters.splice(evt.oldIndex, 1)[0];
+            characters.splice(evt.newIndex, 0, moved);
+            if (characters[evt.newIndex - 1]) characters[evt.newIndex].init = characters[evt.newIndex - 1].init - 1;
+            renderCharacters();
+            saveData();
+        }
+    });
 };
