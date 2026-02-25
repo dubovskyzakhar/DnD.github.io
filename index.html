@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DnD Battle Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body id="main-bg">
+    <div class="overlay"></div>
+    
+    <nav class="main-nav">
+        <button onclick="switchTab('battle')">⚔️ Бой</button>
+        <button onclick="switchTab('settings')">📜 Настройки</button>
+    </nav>
+
+    <main id="battle-tab" class="tab-content active">
+        <div class="battle-grid">
+            <div class="column characters-col">
+                <h2>Герои</h2>
+                <div id="character-list" class="sortable-list"></div>
+            </div>
+
+            <div class="column monsters-col">
+                <h2>Противники</h2>
+                <div id="monster-list" class="monster-grid-inner"></div>
+            </div>
+
+            <div class="column status-dock">
+                <h2>Статусы</h2>
+                <div id="available-statuses" class="status-items"></div>
+            </div>
+        </div>
+    </main>
+
+    <main id="settings-tab" class="tab-content">
+        <div class="settings-container">
+            <div class="config-card">
+                <h3>Добавить Героя (JSON)</h3>
+                <input type="file" id="import-json" accept=".json">
+            </div>
+
+            <div class="config-card">
+                <h3>Бестиарий (dnd.su)</h3>
+                <input type="text" id="monster-url" placeholder="Вставьте ссылку...">
+                <button onclick="addMonsterByUrl()">Призвать</button>
+            </div>
+
+            <div class="config-card">
+                <h3>Создать Статус</h3>
+                <input type="text" id="status-name" placeholder="Название">
+                <input type="file" id="status-icon" accept="image/*">
+                <button onclick="createNewStatus()">Создать</button>
+            </div>
+
+            <div class="config-card">
+                <h3>Атмосфера</h3>
+                <label>Фон приложения:</label>
+                <input type="file" id="bg-upload" onchange="changeBackground(event)">
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
