@@ -106,4 +106,42 @@ window.onload = () => {
 
 function saveData() {
     localStorage.setItem('dnd_chars', JSON.stringify(characters));
+
+}
+
+async function addMonsterByUrl() {
+    const url = document.getElementById('monster-url').value;
+    if (!url) return;
+
+    // Используем бесплатный прокси-сервер для обхода блокировок (CORS)
+    const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+
+    try {
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const html = data.contents; // Весь текст страницы dnd.su
+
+        // Парсим имя (оно обычно в теге h1)
+        const nameMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
+        const name = nameMatch ? nameMatch[1].replace(/<[^>]*>?/gm, '').trim() : "Неизвестный монстр";
+
+        // Парсим картинку (ищем первую большую картинку в блоке бестиария)
+        const imgMatch = html.match(/<img[^>]+src="([^">]+(bestiary|img)[^">]+)"/);
+        let imgSrc = imgMatch ? imgMatch[1] : "";
+        if (imgSrc && !imgSrc.startsWith('http')) imgSrc = "https://dnd.su" + imgSrc;
+
+        // Добавляем в массив монстров
+        monsters.push({
+            name: name,
+            maxHp: 50, // По умолчанию (парсинг HP сложнее, требует RegExp)
+            currentHp: 50,
+            init: Math.floor(Math.random() * 20) + 1,
+            img: imgSrc
+        });
+
+        renderMonsters(); // Функция отрисовки (добавь её в JS)
+    } catch (error) {
+        console.error("Ошибка парсинга:", error);
+        alert("Не удалось загрузить данные. Проверь ссылку.");
+    }
 }
