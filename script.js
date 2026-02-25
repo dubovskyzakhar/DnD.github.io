@@ -114,36 +114,73 @@ async function addMonsterByUrl() {
     const url = document.getElementById('monster-url').value;
     if (!url) return;
 
-    // Используем бесплатный прокси-сервер для обхода блокировок (CORS)
-    const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
-
+    // Используем прокси для обхода CORS
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    
     try {
         const response = await fetch(proxyUrl);
         const data = await response.json();
-        const html = data.contents; // Весь текст страницы dnd.su
+        const html = data.contents;
 
-        // Парсим имя (оно обычно в теге h1)
-        const nameMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
-        const name = nameMatch ? nameMatch[1].replace(/<[^>]*>?/gm, '').trim() : "Неизвестный монстр";
+        // Создаем временный элемент для парсинга HTML через DOM
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-        // Парсим картинку (ищем первую большую картинку в блоке бестиария)
-        const imgMatch = html.match(/<img[^>]+src="([^">]+(bestiary|img)[^">]+)"/);
-        let imgSrc = imgMatch ? imgMatch[1] : "";
-        if (imgSrc && !imgSrc.startsWith('http')) imgSrc = "https://dnd.su" + imgSrc;
+        // 1. Имя (на ttg.club оно обычно в <h1> или .name)
+        const name = doc.querySelector('h1')?.innerText || doc.querySelector('.name')?.innerText || "Неизвестный монстр";
 
-        // Добавляем в массив монстров
-        monsters.push({
-            name: name,
-            maxHp: 50, // По умолчанию (парсинг HP сложнее, требует RegExp)
-            currentHp: 50,
-            init: Math.floor(Math.random() * 20) + 1,
-            img: imgSrc
-        });
+        // 2. HP (Хиты)
+        // Ищем текст, содержащий "Хиты" или "Hit Points"
+        let hp = 50; // значение по умолчанию
+        const bodyText = doc.body.innerText;
+        const hpMatch = bodyText.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i);
+        if (hpMatch) {
+            hp = parseInt(hpMatch[1]);
+        }
 
-        renderMonsters(); // Функция отрисовки (добавь её в JS)
-    } catch (error) {
-        console.error("Ошибка парсинга:", error);
-        alert("Не удалось загрузить данные. Проверь ссылку.");
+        // 3. Картинка
+        // На ttg.club картинки часто лежат в специфических тегах или по ссылке в описании
+        let imgSrc = "";
+        const imgTag = doc.querySelector('.image-container img') || doc.querySelector('img[src*="bestiary"]');
+        if (imgTag) {
+            imgSrc = imgTag.src;
+            // Если ссылка относительная, добавляем домен
+            if (imgSrc.startsWith('origin/')) {
+                 imgSrc = "https://5e14.ttg.club/" + imgSrc.replace('origin/', '');
+            }
+        } else {
+            // Если картинку не нашли через селектор, пробуем найти по ключевым словам в атрибутах
+            const allImages = Array.from(doc.querySelectorAll('img'));
+            const monsterImg = allImages.find(img => img.src.includes('bestiary') || img.src.includes('avatar'));
+            if (monsterImg) imgSrc = monsterImg.src;
+        }
+
+        const newMonster = {
+            Name: name.trim(),
+            MaxHP: hp,
+            CurrentHP: hp,
+            Initiative: Math.floor(Math.random() * 20) + 1,
+            ImageURL: imgSrc
+        };
+
+        // Добавляем в локальный массив
+        monsters.push(newMonster);
+        renderMonsters();
+        
+        // ЗАПИСЬ В ГУГЛ ТАБЛИЦУ
+        // Передаем массив данных в том порядке, в котором у тебя идут заголовки в таблице
+        sendDataToSheets('Monsters', 'add', [
+            newMonster.Name, 
+            newMonster.MaxHP, 
+            newMonster.CurrentHP, 
+            newMonster.Initiative, 
+            newMonster.ImageURL
+        ]);
+
+        alert(`Монстр ${newMonster.Name} добавлен в базу!`);
+
+    } catch (e) {
+        console.error("Ошибка парсинга ttg.club:", e);
+        alert("Не удалось загрузить данные с этого сайта. Попробуй еще раз или проверь консоль.");
     }
 }
-
