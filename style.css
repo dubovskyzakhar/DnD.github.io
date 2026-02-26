@@ -15,6 +15,40 @@ body {
     min-height: 100vh;
 }
 
+.avatar-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    flex-shrink: 0; /* Чтобы контейнер не сжимался */
+}
+
+/* Наложение AC поверх аватара */
+.ac-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px; /* Смещаем в правый верхний угол аватара */
+    background: #4a3b2a;
+    color: var(--gold);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 3;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+.monster-card .ac-badge {
+    background: #ff4444;
+    color: white;
+    border-color: #ffffff;
+}
+
 .overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -331,6 +365,7 @@ body {
 .lib-actions { display: flex; gap: 10px; }
 .btn-lib-upload { cursor: pointer; font-size: 1.2rem; filter: grayscale(1); transition: 0.3s; }
 .btn-lib-upload:hover { filter: grayscale(0); }
+
 
 
 
