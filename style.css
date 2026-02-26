@@ -281,6 +281,48 @@ body {
     transition: 0.2s;
 }
 
+.search-container {
+    margin-bottom: 10px;
+}
+
+#monster-search {
+    width: 100%;
+    padding: 8px;
+    background: #2c1e14;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    border-radius: 4px;
+    font-family: 'Almendra', serif;
+    box-sizing: border-box;
+}
+
+.library-list {
+    /* Фиксированная высота для 5 элементов (примерно 52px на элемент) */
+    max-height: 260px; 
+    overflow-y: auto;
+    border: 1px solid var(--gold);
+    padding: 5px;
+    background: rgba(0,0,0,0.3);
+}
+
+/* Красивый скроллбар под золото */
+.library-list::-webkit-scrollbar {
+    width: 6px;
+}
+.library-list::-webkit-scrollbar-thumb {
+    background: var(--gold);
+    border-radius: 10px;
+}
+
+.library-item {
+    height: 50px; /* Фиксированная высота строки */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+}
+
 .library-item:hover { background: rgba(255,215,0,0.1); }
 
 .lib-info { display: flex; align-items: center; cursor: pointer; flex-grow: 1; }
@@ -289,6 +331,7 @@ body {
 .lib-actions { display: flex; gap: 10px; }
 .btn-lib-upload { cursor: pointer; font-size: 1.2rem; filter: grayscale(1); transition: 0.3s; }
 .btn-lib-upload:hover { filter: grayscale(0); }
+
 
 
 
