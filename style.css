@@ -419,6 +419,29 @@ body {
     filter: grayscale(0.8) opacity(0.8);
 }
 
+/* Убеждаемся, что выпадающее меню имеет максимальный приоритет */
+.status-dropdown {
+    display: none;
+    position: absolute;
+    top: 30px; /* чуть ниже кнопки */
+    left: 0;
+    z-index: 9999; /* Очень высокое значение */
+    background: #2c1e14;
+    border: 2px solid var(--gold);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+    width: 250px;
+}
+
+/* Когда меню открыто, поднимаем всю карточку юнита над соседями */
+.character-card.has-open-menu {
+    z-index: 999; 
+    position: relative; /* Обязательно для работы z-index */
+}
+
+
 
 
 
