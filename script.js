@@ -118,6 +118,16 @@ async function addMonsterManual() {
     } else {
         alert("Пожалуйста, выберите JSON файл.");
     }
+
+    const nameField = document.getElementById('monster-name');
+const hpField = document.getElementById('monster-hp');
+const acField = document.getElementById('monster-ac');
+const fileField = document.getElementById('monster-json');
+
+if (nameField) nameField.value = '';
+if (hpField) hpField.value = '';
+if (acField) acField.value = '';
+if (fileField) fileField.value = '';
 }
 
 async function addMonsterToDB(monsterData) {
@@ -471,6 +481,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
