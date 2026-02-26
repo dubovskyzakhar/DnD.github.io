@@ -9,6 +9,7 @@ function switchTab(tabId) {
     document.getElementById(tabId + '-tab').classList.add('active');
 }
 
+// ОБНОВЛЕННЫЙ РЕНДЕР ГЕРОЕВ
 function renderCharacters() {
     const list = document.getElementById('character-list');
     list.innerHTML = '';
@@ -20,37 +21,50 @@ function renderCharacters() {
             <img src="${char.img || ''}" class="avatar">
             <div><strong>${char.name}</strong><br>Инициатива: ${char.init}</div>
             <div class="hp-box">
-                HP: <span class="hp-value" 
-                      onwheel="changeHP(event, 'char', ${index})" 
-                      onclick="editHP('char', ${index})">
-                      ${char.currentHp}/${char.maxHp}
+                HP: <span class="hp-value" onclick="editHP('char', ${index})" onwheel="changeHP(event, 'char', ${index})">
+                    ${char.currentHp}/${char.maxHp}
                 </span>
             </div>
+            <button class="delete-btn" onclick="deleteItem('char', ${index})" title="Удалить">🗑️</button>
         `;
         list.appendChild(div);
     });
 }
 
+// ОБНОВЛЕННЫЙ РЕНДЕР МОНСТРОВ
 function renderMonsters() {
     const list = document.getElementById('monster-list');
     list.innerHTML = '';
     monsters.forEach((m, index) => {
         const div = document.createElement('div');
-        div.className = 'character-card monster-theme';
+        div.className = 'character-card';
         div.style.borderLeft = "8px solid #a00";
         div.innerHTML = `
             <img src="${m.img || ''}" class="avatar">
             <div><strong>${m.name}</strong><br>Инициатива: ${m.init}</div>
             <div class="hp-box">
-                HP: <span class="hp-value" 
-                      onwheel="changeHP(event, 'monster', ${index})" 
-                      onclick="editHP('monster', ${index})">
-                      ${m.currentHp}/${m.maxHp}
+                HP: <span class="hp-value" onclick="editHP('monster', ${index})" onwheel="changeHP(event, 'monster', ${index})">
+                    ${m.currentHp}/${m.maxHp}
                 </span>
             </div>
+            <button class="delete-btn" onclick="deleteItem('monster', ${index})" title="Удалить">🗑️</button>
         `;
         list.appendChild(div);
     });
+}
+
+// ФУНКЦИЯ УДАЛЕНИЯ
+function deleteItem(type, index) {
+    if (!confirm("Удалить персонажа из списка?")) return;
+
+    if (type === 'char') {
+        characters.splice(index, 1);
+        renderCharacters();
+    } else {
+        monsters.splice(index, 1);
+        renderMonsters();
+    }
+    saveData(); // Сохраняем изменения в браузере
 }
 
 function changeHP(e, type, index) {
@@ -170,3 +184,4 @@ window.onload = () => {
         }
     });
 };
+
