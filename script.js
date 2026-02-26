@@ -68,43 +68,35 @@ function renderCombatList() {
         const div = document.createElement('div');
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
         
-        div.innerHTML = `
-            <div style="position: relative;" class="avatar-container">
-                <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
-                
-                <label class="upload-badge">
-                    📷
-                    <input type="file" accept="image/*" style="display:none" onchange="updateUnitPhoto(event, ${index})">
-                </label>
+        // Внутри combatants.forEach((unit, index) => { ...
 
-                <div class="ac-badge" onclick="editBaseAC(${index})" title="Нажми, чтобы изменить базу">
-                    ${totalAC}
-                </div>
-            </div>
+div.innerHTML = `
+    <div class="avatar-container">
+        <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
+        <div class="ac-badge" onclick="editBaseAC(${index})">${totalAC}</div>
+    </div>
 
-            <div style="flex-grow: 1; margin-left: 10px;">
-                <strong>${unit.name}</strong><br>
-                Инициатива: <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
-            </div>
+    <div style="flex-grow: 1; margin-left: 10px;">
+        <strong>${unit.name}</strong><br>
+        <small>Инициатива:</small> <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
+        ${unit.acNote ? `<div class="unit-note ac-note">${unit.acNote}</div>` : ''}
+    </div>
 
-            <div class="mod-buttons">
-                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" 
-                        onclick="toggleMod(${index}, 'shield')" title="+2 (Щит)">🛡️+</button>
-                
-                <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" 
-                        onclick="toggleMod(${index}, '1/2')" title="+2 (Укрытие 1/2)">1/2</button>
-                
-                <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" 
-                        onclick="toggleMod(${index}, '3/4')" title="+5 (Укрытие 3/4)">3/4</button>
-            </div>
+    <div class="mod-buttons">
+        <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')" title="+2 Щит">🛡️+</button>
+        <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')">1/2</button>
+        <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="toggleMod(${index}, '3/4')">3/4</button>
+    </div>
 
-            <div class="hp-box">
-                HP: <span class="hp-value" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
-                    ${unit.currentHp}/${unit.maxHp}
-                </span>
-            </div>
-            <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
-        `;
+    <div class="hp-box">
+        <span class="hp-value" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
+            ${unit.currentHp}/${unit.maxHp}
+        </span>
+        ${unit.hpNote ? `<div class="unit-note hp-note">${unit.hpNote}</div>` : ''}
+    </div>
+    
+    <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
+`;
         list.appendChild(div);
     });
 }
@@ -226,16 +218,35 @@ function filterMonsters() {
     displayMonsters(filtered);
 }
 
-function addMonsterToCombat(name, hp, ac, img) {
+function addMonsterToCombat(name, hpRaw, acRaw, img) {
+    // Функция для разделения числа и текста
+    const parseValue = (str) => {
+        if (!str) return { val: 0, note: "" };
+        const s = str.toString();
+        // Ищем первое число в строке
+        const match = s.match(/^(\d+)/);
+        const val = match ? parseInt(match[1]) : 0;
+        // Забираем всё, что идет после первого числа, и чистим от скобок
+        let note = s.replace(/^\d+/, "").replace(/[()]/g, "").trim();
+        return { val, note };
+    };
+
+    const hpData = parseValue(hpRaw);
+    const acData = parseValue(acRaw);
+
     const unit = {
-        name: name || "Дикий монстр",
-        maxHp: parseInt(hp) || 10,
-        currentHp: parseInt(hp) || 10,
-        ac: ac ? parseInt(ac) : null, // Если AC нет, будет null
+        name: name || "Монстр",
+        maxHp: hpData.val,
+        currentHp: hpData.val,
+        hpNote: hpData.note, // Текст для столбца H
+        ac: acData.val,
+        acNote: acData.note, // Текст для столбца G
         init: 0,
         img: img || 'https://i.imgur.com/83p7pId.png',
-        type: 'monster'
+        type: 'monster',
+        mods: { shield: false, cover: null }
     };
+
     combatants.push(unit);
     saveData();
     renderCombatList();
@@ -366,6 +377,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
