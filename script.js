@@ -282,6 +282,44 @@ async function sendDataToSheets(sheet, action, data) {
     fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ sheet, action, data }) });
 }
 
+function displayMonsters(monsters) {
+    const container = document.getElementById('monster-library-list');
+    container.innerHTML = '';
+    
+    monsters.forEach((item) => {
+        const values = Object.values(item);
+        const name = item["Имя"] || values[0];
+        const hp = item["MaxHP"] || values[1];
+        const ac = item["AC"] || values[2];
+        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+
+        const div = document.createElement('div');
+        div.className = 'library-item';
+        div.innerHTML = `
+            <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
+                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                <span>${name} <small>(AC: ${ac})</small></span>
+            </div>
+            <div class="lib-actions">
+                <label class="btn-lib-upload" title="Обновить фото">
+                    📷
+                    <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event)">
+                </label>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function filterMonsters() {
+    const query = document.getElementById('monster-search').value.toLowerCase();
+    const filtered = fullMonsterDatabase.filter(m => {
+        const name = (m["Имя"] || Object.values(m)[0]).toLowerCase();
+        return name.includes(query);
+    });
+    displayMonsters(filtered);
+}
+
 function saveData() { localStorage.setItem('dnd_combatants', JSON.stringify(combatants)); }
 
 function changeBackground(event) {
@@ -351,33 +389,8 @@ async function loadMonsterLibrary() {
 
     try {
         const response = await fetch(`${API_URL}?sheet=Enemies`);
-        const data = await response.json();
-        
-        container.innerHTML = '';
-        
-        data.forEach((item) => {
-            const values = Object.values(item);
-            const name = item["Имя"] || values[0];
-            const hp = item["MaxHP"] || values[1];
-            const ac = item["AC"] || values[2];
-            const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
-
-            const div = document.createElement('div');
-            div.className = 'library-item';
-            div.innerHTML = `
-                <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
-                    <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                    <span>${name} <small>(AC: ${ac})</small></span>
-                </div>
-                <div class="lib-actions">
-                    <label class="btn-lib-upload" title="Обновить фото в БД">
-                        📷
-                        <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event)">
-                    </label>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+        fullMonsterDatabase = await response.json(); // Сохраняем всех монстров
+        displayMonsters(fullMonsterDatabase); // Отображаем всех
     } catch (e) {
         container.innerHTML = 'Ошибка загрузки бестиария';
     }
@@ -473,6 +486,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
