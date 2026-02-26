@@ -294,3 +294,43 @@ body {
 .lib-info { display: flex; align-items: center; cursor: pointer; flex-grow: 1; }
 .lib-info img { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; border: 1px solid var(--gold); }
 
+/* Подсветка активного юнита */
+.character-card.selected {
+    box-shadow: 0 0 15px 5px rgba(197, 160, 89, 0.8);
+    border-color: var(--gold-bright) !important;
+    transform: scale(1.02);
+    transition: 0.2s;
+}
+
+/* Стили для кнопок управления в шапке */
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.add-quick-btn {
+    background: var(--gold) !important;
+    color: #2c1e14 !important;
+    border-radius: 50% !important;
+    width: 40px;
+    height: 40px;
+    padding: 0 !important;
+    font-size: 24px !important;
+    line-height: 40px;
+}
+
+/* Кнопка клонирования */
+.clone-btn {
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.5;
+    transition: 0.3s;
+    margin-right: 5px;
+}
+.character-card:hover .clone-btn { opacity: 1; }
+
+
