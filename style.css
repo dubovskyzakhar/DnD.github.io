@@ -45,14 +45,11 @@ body {
 .tab-content { display: none; padding: 20px; }
 .tab-content.active { display: block; }
 
-.battle-grid {
-    display: flex;
-    gap: 20px;
-    justify-content: space-around;
-    flex-wrap: wrap;
+.full-width-column {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.column { flex: 1; min-width: 320px; }
 .column-title { color: var(--gold); text-align: center; text-shadow: 2px 2px 4px black; }
 
 .character-card {
@@ -66,6 +63,20 @@ body {
     box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
     color: var(--text);
     position: relative;
+    transition: transform 0.2s;
+}
+
+/* КРАСНАЯ КАРТОЧКА ДЛЯ МОНСТРОВ */
+.character-card.monster-card {
+    background: linear-gradient(135deg, #7a0000 0%, #4a0000 100%) !important;
+    border: 3px solid #ff4444 !important;
+    color: #ffffff !important;
+}
+
+.character-card.monster-card .hp-value, 
+.character-card.monster-card .init-value {
+    color: #ffaaaa;
+    border-color: #ffaaaa;
 }
 
 .avatar {
@@ -74,6 +85,7 @@ body {
     border: 2px solid var(--gold);
     margin-right: 15px;
     object-fit: cover;
+    background: #000;
 }
 
 .hp-box { margin-left: auto; text-align: right; font-weight: bold; }
@@ -84,6 +96,22 @@ body {
     padding: 2px 5px;
     font-size: 1.2rem;
     color: #a00;
+}
+
+.init-value {
+    cursor: pointer;
+    background: rgba(197, 160, 89, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.init-value:hover {
+    background: var(--gold);
+    color: #000;
 }
 
 .delete-btn {
@@ -108,51 +136,23 @@ body {
     color: #fff;
 }
 
-.config-card input {
+.config-card input, #db-character-select {
     width: calc(100% - 20px);
     padding: 10px;
     margin: 10px 0;
+    background: #2c1e14;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 5px;
 }
 
 .config-card button {
     width: 100%;
     padding: 12px;
     background: var(--gold);
+    color: white;
+    border: none;
     cursor: pointer;
     font-weight: bold;
-}
-
-.full-width-column {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.init-value {
-    cursor: pointer;
-    background: rgba(197, 160, 89, 0.2);
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    font-weight: bold;
-    margin-left: 10px;
-}
-
-.init-value:hover {
-    background: var(--gold);
-    color: #000;
-}
-
-/* Выделение монстров в общем списке */
-.character-card.is-monster {
-    border-left: 8px solid #a00;
-}
-
-#db-character-select {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: #2c1e14;
-    color: var(--gold);
-    border: 1px solid var(--gold);
+    border-radius: 5px;
 }
