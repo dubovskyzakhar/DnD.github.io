@@ -17,18 +17,28 @@
     </nav>
 
     <main id="battle-tab" class="tab-content active">
-        <div class="battle-grid">
-            <div class="column">
-                <h2 class="column-title">Герои</h2>
-                <div id="character-list"></div>
-            </div>
+    <div class="full-width-column">
+        <h2 class="column-title">Очередь инициативы</h2>
+        <div id="master-list"></div> </div>
+</main>
 
-            <div class="column">
-                <h2 class="column-title">Противники</h2>
-                <div id="monster-list"></div>
-            </div>
+<main id="settings-tab" class="tab-content">
+    <div class="settings-container">
+        <div class="config-card">
+            <h3>Библиотека героев (из БД)</h3>
+            <select id="db-character-select">
+                <option value="">Загрузка списка...</option>
+            </select>
+            <button onclick="addFromLibrary()">Добавить выбранного</button>
         </div>
-    </main>
+
+        <div class="config-card">
+            <h3>Импорт нового героя (JSON)</h3>
+            <input type="file" id="import-json" accept=".json">
+            <button onclick="importCharacter()">Проверить и призвать</button>
+        </div>
+        </div>
+</main>
 
     <main id="settings-tab" class="tab-content">
         <div class="settings-container">
@@ -55,3 +65,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
