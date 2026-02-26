@@ -314,7 +314,12 @@ body {
 }
 
 .hp-current { font-size: 1.2rem; }
-.hp-divider { font-size: 0.7rem; border-top: 1px solid white; width: 20px; text-align: center; }
+.hp-divider { 
+    height: 1px;
+    border-top: 1px solid white; 
+    width: 24px; 
+    margin: 2px 0;
+}
 .hp-max { font-size: 0.9rem; }
 
 .pb-label {
@@ -329,6 +334,7 @@ body {
     border-radius: 3px;
     font-weight: bold;
 }
+
 
 
 
