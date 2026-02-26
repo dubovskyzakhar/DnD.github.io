@@ -228,7 +228,7 @@ div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}
                 
                 <div class="status-container">
                     <div class="active-statuses">${statusIcons}</div>
-                    <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ статус</button>
+                    <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ Состояние</button>
                     <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()">
                         ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
                     </div>
@@ -607,6 +607,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
