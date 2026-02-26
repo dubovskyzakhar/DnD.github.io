@@ -14,6 +14,29 @@ function switchTab(tabId) {
     }
 }
 
+// Функция отправки данных о монстре в Google Таблицу
+async function addMonsterToDB(monsterData) {
+    const sheetName = 'Enemies';
+    
+    // Формируем массив строки точно в том порядке, как идут столбцы в твоей таблице
+    // Обычно: Имя, HP, AC, Ссылка, Фото, Способность, Тип
+    const rowData = [
+        monsterData.name || "Новый монстр",             // Столбец A (Имя)
+        monsterData.hp?.average || monsterData.hp || "10", // Столбец B (HP)
+        monsterData.ac?.[0] || monsterData.ac || "10",     // Столбец C (AC)
+        "",                                             // Столбец D (Ссылка)
+        monsterData.img || "",                          // Столбец E (Фото/Токен)
+        monsterData.trait ? monsterData.trait[0].name : "Вручную", // Столбец F (Способность)
+        monsterData.type || "manual"                    // Столбец G (Тип)
+    ];
+    
+    console.log("Отправка в БД:", rowData);
+
+    // Вызываем твою основную функцию отправки
+    // Важно: Убедись, что функция sendDataToSheets определена в коде!
+    await sendDataToSheets(sheetName, 'add', rowData);
+}
+
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
 // Функция переключения модификаторов
 function toggleMod(index, modType) {
@@ -431,6 +454,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
