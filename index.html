@@ -47,10 +47,13 @@
 
             <div class="config-row">
                 <div class="config-card flex-1">
-                    <h3>Бестиарий (из БД)</h3>
-                    <div id="monster-library-list" class="library-list">
-                        </div>
-                </div>
+    <h3>Бестиарий (из БД)</h3>
+    <div class="search-container">
+        <input type="text" id="monster-search" placeholder="Поиск монстра..." oninput="filterMonsters()">
+    </div>
+    <div id="monster-library-list" class="library-list">
+        </div>
+</div>
 
                 <div class="config-card flex-1">
                     <h3>Новый монстр (JSON)</h3>
@@ -75,6 +78,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
