@@ -61,22 +61,23 @@ function changeBackground(event) {
 
 async function addMonsterManual() {
     const fileInput = document.getElementById('monster-json');
-    
-    // Если выбран файл JSON
+    const nameField = document.getElementById('monster-name');
+    const hpField = document.getElementById('monster-hp');
+    const acField = document.getElementById('monster-ac');
+    const imgField = document.getElementById('monster-img');
+
+    // Сценарий А: Если выбран JSON файл
     if (fileInput && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const monsterData = JSON.parse(e.target.result);
                 
-                // 1. Извлекаем имя
+                // Извлекаем данные из JSON (ваша логика для сложных объектов)
                 const name = monsterData.name || "Новый монстр";
-                
-                // 2. Извлекаем HP (учитываем average и formula для заметок)
                 const hpAvg = monsterData.hp?.average || 10;
                 const hpFormula = monsterData.hp?.formula || "";
                 
-                // 3. Извлекаем AC (обрабатываем и число, и объект)
                 let acVal = 10;
                 let acNote = "";
                 if (Array.isArray(monsterData.ac)) {
@@ -89,45 +90,74 @@ async function addMonsterManual() {
                     }
                 }
 
-                // 4. Подготавливаем данные для БД (8 столбцов)
                 const dbData = {
                     name: name,
                     hp: hpAvg,
                     ac: acVal,
                     type: monsterData.type || "unknown",
                     img: monsterData.img || "",
-                    description: monsterData.trait ? monsterData.trait[0].name : "",
+                    description: monsterData.trait ? monsterData.trait[0].name : "Загружен из JSON",
                     acNote: acNote,
                     hpNote: hpFormula
                 };
 
-                // Отправляем в список боя (визуально)
                 addMonsterToCombat(name, `${hpAvg} (${hpFormula})`, `${acVal} ${acNote}`, dbData.img);
-                
-                // Отправляем в Google Sheets
                 await addMonsterToDB(dbData);
                 
-                alert(`Монстр ${name} добавлен!`);
-                fileInput.value = ''; // Сброс файла
+                alert(`Монстр ${name} добавлен из файла!`);
+                fileInput.value = ''; 
             } catch (err) {
-                console.error(err);
-                alert("Ошибка при чтении JSON файла!");
+                alert("Ошибка в формате JSON!");
             }
         };
         reader.readAsText(fileInput.files[0]);
+    } 
+    // Сценарий Б: Если файла нет, берем данные из полей ввода (ВРУЧНУЮ)
+    else if (nameField && nameField.value.trim() !== "") {
+        const dbData = {
+            name: nameField.value,
+            hp: parseInt(hpField.value) || 10,
+            ac: parseInt(acField.value) || 10,
+            type: "manual",
+            img: imgField.value || 'https://i.imgur.com/83p7pId.png',
+            description: "Добавлен вручную",
+            acNote: "",
+            hpNote: ""
+        };
+
+        addMonsterToCombat(dbData.name, dbData.hp, dbData.ac, dbData.img);
+        await addMonsterToDB(dbData);
+        
+        alert(`Монстр ${dbData.name} добавлен вручную!`);
+        
+        // Очистка
+        nameField.value = '';
+        hpField.value = '';
+        acField.value = '';
+        imgField.value = '';
     } else {
-        alert("Пожалуйста, выберите JSON файл.");
+        alert("Заполните имя монстра или выберите JSON файл!");
     }
+}
 
-    const nameField = document.getElementById('monster-name');
-const hpField = document.getElementById('monster-hp');
-const acField = document.getElementById('monster-ac');
-const fileField = document.getElementById('monster-json');
-
-if (nameField) nameField.value = '';
-if (hpField) hpField.value = '';
-if (acField) acField.value = '';
-if (fileField) fileField.value = '';
+async function addMonsterToDB(monsterData) {
+    const sheetName = 'Enemies';
+    
+    // Твой строгий порядок (8 столбцов):
+    // 1. Название | 2. Хиты | 3. КД | 4. Тип | 5. Фото | 6. Описание | 7. Доп КД | 8. Доп хиты
+    const rowData = [
+        monsterData.name,        // A
+        monsterData.hp,          // B
+        monsterData.ac,          // C
+        monsterData.type,        // D
+        monsterData.img,         // E
+        monsterData.description, // F
+        monsterData.acNote,      // G
+        monsterData.hpNote       // H
+    ];
+    
+    // Используем уже существующую функцию POST запроса
+    await sendDataToSheets(sheetName, 'add', rowData);
 }
 
 async function addMonsterToDB(monsterData) {
@@ -381,7 +411,16 @@ function deleteUnit(index) {
 function saveData() { localStorage.setItem('dnd_combatants', JSON.stringify(combatants)); }
 
 async function sendDataToSheets(sheet, action, data) {
-    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ sheet, action, data }) });
+    try {
+        await fetch(API_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sheet, action, data }) 
+        });
+    } catch (e) {
+        console.error("Ошибка отправки в БД:", e);
+    }
 }
 
 // Загрузка фото напрямую в БД (универсальная)
@@ -481,6 +520,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
