@@ -300,8 +300,34 @@ body {
 /* Стили для кнопок управления в шапке */
 .nav-controls {
     display: flex;
-    align-items: center;
     gap: 10px;
+    margin-left: 20px;
+}
+
+.danger-btn {
+    background: rgba(160, 0, 0, 0.2) !important;
+    border: 1px solid #a00 !important;
+    color: #ffaaaa !important;
+    font-size: 0.9rem !important;
+    padding: 5px 12px !important;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-family: 'Almendra', serif;
+}
+
+.danger-btn:hover {
+    background: #a00 !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+/* На мобилках или узких экранах уменьшаем текст */
+@media (max-width: 600px) {
+    .danger-btn {
+        font-size: 0.7rem !important;
+        padding: 4px 8px !important;
+    }
 }
 
 .add-quick-btn {
@@ -440,6 +466,7 @@ body {
     z-index: 999; 
     position: relative; /* Обязательно для работы z-index */
 }
+
 
 
 
