@@ -1,10 +1,17 @@
 let combatants = JSON.parse(localStorage.getItem('dnd_combatants')) || [];
+let fullMonsterDatabase = []; // Для хранения всех монстров из БД
+let fullHeroDatabase = [];    // Для хранения всех героев из БД
 const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
+// Исправленная функция переключения вкладок
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId + '-tab').classList.add('active');
-    if(tabId === 'settings') loadLibrary();
+    
+    if(tabId === 'settings') {
+        loadHeroLibrary();    // Загрузка героев
+        loadMonsterLibrary(); // Загрузка монстров
+    }
 }
 
 function renderCombatList() {
@@ -94,79 +101,12 @@ async function importCharacter() {
 
 let selectedHeroData = null; // Переменная для хранения выбранного героя
 
-function toggleLibrary() {
-    document.getElementById('library-options').classList.toggle('active');
-}
-
 // Закрывать список, если кликнули мимо
 window.addEventListener('click', function(e) {
     if (!document.getElementById('library-select-container').contains(e.target)) {
         document.getElementById('library-options').classList.remove('active');
     }
 });
-
-async function loadLibrary() {
-    const optionsContainer = document.getElementById('library-options');
-    const selectedText = document.getElementById('selected-text');
-    if (!optionsContainer) return;
-
-    try {
-        const response = await fetch(`${API_URL}?sheet=Characters`);
-        const data = await response.json();
-        
-        optionsContainer.innerHTML = '';
-        
-        data.forEach((item) => {
-            const values = Object.values(item);
-            const charName = item["Имя"] || item["name"] || values[0] || "Герой";
-            const charImg = item["Фото"] || item["img"] || values[4] || "";
-
-            // Создаем элемент опции
-            const div = document.createElement('div');
-            div.className = 'option-item';
-            div.innerHTML = `
-                <img src="${charImg}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${charName}</span>
-            `;
-
-            // Логика выбора
-            div.onclick = () => {
-                selectedHeroData = {
-                    name: charName,
-                    maxHp: parseInt(item["MaxHP"] || values[1]) || 10,
-                    img: charImg
-                };
-                selectedText.innerHTML = `<img src="${charImg}" style="width:25px;height:25px;border-radius:50%;margin-right:10px;vertical-align:middle;"> ${charName}`;
-                optionsContainer.classList.remove('active');
-            };
-
-            optionsContainer.appendChild(div);
-        });
-    } catch (e) {
-        optionsContainer.innerHTML = '<div class="option-item">Ошибка загрузки БД</div>';
-    }
-}
-
-function addFromLibrary() {
-    if (!selectedHeroData) return alert("Сначала выберите героя!");
-
-    const newUnit = {
-        name: selectedHeroData.name,
-        maxHp: selectedHeroData.maxHp,
-        currentHp: selectedHeroData.maxHp,
-        init: 0, // Установлено в 0
-        img: selectedHeroData.img,
-        type: 'hero'
-    };
-
-    combatants.push(newUnit);
-    saveData();
-    renderCombatList();
-    
-    selectedHeroData = null;
-    document.getElementById('selected-text').innerText = "-- Выберите героя --";
-    switchTab('battle');
-}
 
 async function importMonster() {
     const fileInput = document.getElementById('monster-json');
@@ -240,6 +180,103 @@ async function importMonster() {
         }
     };
     reader.readAsText(fileInput.files[0]);
+}
+
+// Загрузка списка героев из Google Sheets
+async function loadHeroLibrary() {
+    const container = document.getElementById('hero-library-list');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_URL}?sheet=Characters`);
+        fullHeroDatabase = await response.json(); 
+        displayHeroes(fullHeroDatabase);
+    } catch (e) {
+        container.innerHTML = '<div class="library-item">Ошибка загрузки базы героев</div>';
+    }
+}
+
+// Отрисовка героев в настройках
+function displayHeroes(heroes) {
+    const container = document.getElementById('hero-library-list');
+    container.innerHTML = '';
+    
+    heroes.forEach((item) => {
+        const values = Object.values(item);
+        const name = item["Имя"] || values[0];
+        const hp = item["MaxHP"] || values[1];
+        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+
+        const div = document.createElement('div');
+        div.className = 'library-item';
+        div.innerHTML = `
+            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}')">
+                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                <span>${name} <small>(HP: ${hp})</small></span>
+            </div>
+            <div class="lib-actions">
+                <label class="btn-lib-upload" title="Обновить фото">
+                    📷
+                    <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
+                </label>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Фильтр для поиска героев
+function filterHeroes() {
+    const query = document.getElementById('hero-search').value.toLowerCase();
+    const filtered = fullHeroDatabase.filter(h => {
+        const name = (h["Имя"] || Object.values(h)[0]).toString().toLowerCase();
+        return name.includes(query);
+    });
+    displayHeroes(filtered);
+}
+
+// Быстрое добавление героя в бой
+function addHeroToCombat(name, hp, img) {
+    const unit = {
+        name: name,
+        maxHp: hp,
+        currentHp: hp,
+        init: 0,
+        img: img,
+        type: 'hero'
+    };
+    combatants.push(unit);
+    saveData();
+    renderCombatList();
+    alert(`${name} добавлен в бой!`);
+}
+
+// Обновление фото героя напрямую в БД
+async function uploadHeroPhotoDirect(heroName, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Image = e.target.result;
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    sheet: 'Characters',
+                    action: 'updatePhoto',
+                    name: heroName,
+                    photo: base64Image
+                })
+            });
+            alert(`Портрет ${heroName} обновлен в базе!`);
+            loadHeroLibrary(); 
+        } catch (err) {
+            alert("Ошибка связи с БД");
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 // Обновим функцию отрисовки, чтобы видеть AC
@@ -486,6 +523,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
