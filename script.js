@@ -126,13 +126,29 @@ window.onload = () => {
     renderMonsters();
     
     new Sortable(document.getElementById('character-list'), {
-        animation: 150,
-        onEnd: (evt) => {
-            const moved = characters.splice(evt.oldIndex, 1)[0];
-            characters.splice(evt.newIndex, 0, moved);
-            if (characters[evt.newIndex - 1]) characters[evt.newIndex].init = characters[evt.newIndex - 1].init - 1;
-            renderCharacters();
-            saveData();
+    animation: 150,
+    onEnd: (evt) => {
+        // Переставляем элемент в массиве
+        const moved = characters.splice(evt.oldIndex, 1)[0];
+        characters.splice(evt.newIndex, 0, moved);
+
+        // Логика пересчета инициативы:
+        if (characters.length > 1) {
+            if (evt.newIndex === 0) {
+                // Если стал первым — берем инициативу того, кто стал вторым + 1
+                characters[0].init = parseInt(characters[1].init) + 1;
+            } else if (evt.newIndex === characters.length - 1) {
+                // Если стал последним — берем инициативу предпоследнего - 1
+                characters[evt.newIndex].init = parseInt(characters[evt.newIndex - 1].init) - 1;
+            } else {
+                // Если в середине — берем среднее между соседями (или просто чуть меньше верхнего)
+                characters[evt.newIndex].init = parseInt(characters[evt.newIndex - 1].init) - 1;
+            }
         }
-    });
+
+        renderCharacters();
+        saveData();
+    }
+});
 };
+
