@@ -335,6 +335,101 @@ async function updateUnitPhoto(event, index) {
     reader.readAsDataURL(file);
 }
 
+// Дополни этот вызов в существующую функцию switchTab
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId + '-tab').classList.add('active');
+    if(tabId === 'settings') {
+        loadLibrary();        // Загрузка героев
+        loadMonsterLibrary(); // Загрузка монстров
+    }
+}
+
+async function loadMonsterLibrary() {
+    const container = document.getElementById('monster-library-list');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_URL}?sheet=Enemies`);
+        const data = await response.json();
+        
+        container.innerHTML = '';
+        
+        data.forEach((item) => {
+            const values = Object.values(item);
+            const name = item["Имя"] || values[0];
+            const hp = item["MaxHP"] || values[1];
+            const ac = item["AC"] || values[2];
+            const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+
+            const div = document.createElement('div');
+            div.className = 'library-item';
+            div.innerHTML = `
+                <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
+                    <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                    <span>${name} <small>(AC: ${ac})</small></span>
+                </div>
+                <div class="lib-actions">
+                    <label class="btn-lib-upload" title="Обновить фото в БД">
+                        📷
+                        <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event)">
+                    </label>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    } catch (e) {
+        container.innerHTML = 'Ошибка загрузки бестиария';
+    }
+}
+
+// Функция добавления в бой прямо из списка настроек
+function addMonsterToCombat(name, hp, ac, img) {
+    const unit = {
+        name: name,
+        maxHp: hp,
+        currentHp: hp,
+        ac: ac,
+        init: 0,
+        img: img,
+        type: 'monster'
+    };
+    combatants.push(unit);
+    saveData();
+    renderCombatList();
+    alert(`${name} добавлен в бой!`);
+}
+
+// Функция загрузки фото напрямую в БД из списка настроек
+async function uploadPhotoDirect(monsterName, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Image = e.target.result;
+        
+        // Отправляем в Google Sheets (используем тот же action: updatePhoto)
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    sheet: 'Enemies',
+                    action: 'updatePhoto',
+                    name: monsterName,
+                    photo: base64Image
+                })
+            });
+            alert(`Фото для ${monsterName} обновлено в базе данных!`);
+            loadMonsterLibrary(); // Перезагружаем список, чтобы увидеть новую иконку
+        } catch (err) {
+            alert("Ошибка связи с БД");
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
 window.onload = () => {
     const bg = localStorage.getItem('dnd_bg');
     if(bg) document.getElementById('main-bg').style.backgroundImage = `url(${bg})`;
@@ -378,6 +473,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
