@@ -34,14 +34,24 @@ function toggleStatus(index, status) {
 
 function toggleStatusMenu(index) {
     const menu = document.getElementById(`status-menu-${index}`);
+    const card = document.getElementById(`unit-${index}`);
     const allMenus = document.querySelectorAll('.status-dropdown');
+    const allCards = document.querySelectorAll('.character-card');
     
-    // Закрываем другие открытые меню
+    // 1. Закрываем все другие меню и сбрасываем z-index у всех карточек
     allMenus.forEach(m => {
         if (m !== menu) m.style.display = 'none';
     });
+    allCards.forEach(c => c.classList.remove('has-open-menu'));
 
-    menu.style.display = menu.style.display === 'grid' ? 'none' : 'grid';
+    // 2. Переключаем текущее меню
+    if (menu.style.display === 'grid') {
+        menu.style.display = 'none';
+        card.classList.remove('has-open-menu');
+    } else {
+        menu.style.display = 'grid';
+        card.classList.add('has-open-menu'); // Поднимаем карточку на передний план
+    }
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -607,6 +617,14 @@ window.onload = () => {
         });
     }
 };
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.status-container')) {
+        document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
+    }
+});
+
 
 
 
