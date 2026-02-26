@@ -12,9 +12,10 @@
     <div class="overlay"></div>
     
     <nav class="main-nav">
-        <button onclick="switchTab('battle')">⚔️ Бой</button>
-        <button onclick="switchTab('settings')">📜 Настройки</button>
-    </nav>
+    <button onclick="switchTab('battle')">⚔️ Бой</button>
+    <button class="add-quick-btn" onclick="quickAddUnit()" title="Быстро добавить юнита">+</button>
+    <button onclick="switchTab('settings')">📜 Настройки</button>
+</nav>
 
     <main id="battle-tab" class="tab-content active">
         <div class="full-width-column">
@@ -85,6 +86,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
