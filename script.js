@@ -160,38 +160,19 @@ function renderCombatList() {
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
         
         div.innerHTML = `
-            <div class="avatar-container">
-                <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
-                <div class="ac-badge" onclick="editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
-                    ${totalAC}
-                    ${(unit.acNote && unit.acNote.includes('мастерства')) ? '<span class="pb-label">+БМ</span>' : ''}
-                </div>
-            </div>
-
-            <div class="unit-info">
-                <strong>${unit.name}</strong><br>
-                <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
-            </div>
-
-            <div class="mod-buttons">
-                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')" title="Щит +2">🛡️</button>
-                <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')" title="Укрытие 1/2">½</button>
-                <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="toggleMod(${index}, '3/4')" title="Укрытие 3/4">¾</button>
-            </div>
-
-            <div class="hp-heart-container" onclick="editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
-                <svg viewBox="0 0 32 32" class="hp-heart-svg">
-                    <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
-                </svg>
-                <div class="hp-text-overlay">
-                    <span class="hp-current">${unit.currentHp}</span>
-                    <span class="hp-divider-slash">/</span>
-                    <span class="hp-max">${unit.maxHp}</span>
-                </div>
-            </div>
-            
-            <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
-        `;
+    <div class="avatar-container">...</div>
+    <div class="unit-info">...</div>
+    
+    <div class="right-controls-group">
+        <div class="mod-buttons">
+            <button class="shield-btn">🛡️</button>
+            <button class="shield-btn">½</button>
+            <button class="shield-btn">¾</button>
+        </div>
+        <div class="hp-heart-container">...</div>
+        <button class="delete-btn">🗑️</button>
+    </div>
+`;
         list.appendChild(div);
     });
 }
@@ -465,6 +446,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
