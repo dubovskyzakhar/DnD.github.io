@@ -168,36 +168,94 @@ function addFromLibrary() {
     switchTab('battle');
 }
 
-async function addMonsterByUrl() {
-    const urlInput = document.getElementById('monster-url');
-    if (!urlInput.value) return alert("Вставь ссылку!");
-    
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlInput.value)}`;
-    
-    try {
-        const resp = await fetch(proxyUrl);
-        const d = await resp.json();
-        const doc = new DOMParser().parseFromString(d.contents, 'text/html');
-        
-        const name = doc.querySelector('h1')?.innerText || "Монстр";
-        const hpMatch = d.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i);
-        const hp = hpMatch ? parseInt(hpMatch[1]) : 50;
+async function importMonster() {
+    const fileInput = document.getElementById('monster-json');
+    if (!fileInput.files[0]) return alert("Выбери JSON файл монстра!");
 
-        const newMonster = { 
-            name, 
-            maxHp: hp, 
-            currentHp: hp, 
-            init: 0, // Установлено в 0
-            img: "", 
-            type: 'monster' 
-        };
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const raw = JSON.parse(e.target.result);
+            // Обработка структуры твоего JSON (берем среднее HP и AC)
+            const name = (raw.name || "Монстр").toString().trim();
+            const hp = parseInt(raw.hp?.average || 10);
+            const ac = parseInt(raw.ac?.[0] || 10);
+            const type = raw.type || "unknown";
+            
+            // Пытаемся достать картинку, если она есть в JSON (hasToken)
+            // Обычно путь формируется на основе названия или source
+            const img = `https://ttg.club/img/tokens/${raw.source}/${name.split('[')[0].trim()}.png`;
 
-        combatants.push(newMonster);
-        saveData(); 
-        renderCombatList(); 
-        urlInput.value = ""; 
-        switchTab('battle');
-    } catch (e) { alert("Ошибка загрузки данных монстра!"); }
+            // 1. Проверяем дубликат во вкладке Enemies
+            const resp = await fetch(`${API_URL}?sheet=Enemies`);
+            const db = await resp.json();
+            const exists = db.find(row => Object.values(row).some(v => v?.toString().trim().toLowerCase() === name.toLowerCase()));
+
+            const newMonster = {
+                name: name,
+                maxHp: hp,
+                currentHp: hp,
+                ac: ac,
+                init: 0, // Инициатива всегда 0 при добавлении
+                img: img,
+                type: 'monster',
+                description: raw.trait?.[0]?.name || ""
+            };
+
+            // 2. Если такого монстра нет в БД Enemies - добавляем
+            if (!exists) {
+                console.log("Новый монстр! Добавляю в таблицу Enemies...");
+                await sendDataToSheets('Enemies', 'add', [
+                    newMonster.name, 
+                    newMonster.maxHp, 
+                    newMonster.ac, 
+                    type, 
+                    newMonster.img, 
+                    newMonster.description
+                ]);
+            }
+
+            // 3. Добавляем в бой
+            combatants.push(newMonster);
+            saveData();
+            renderCombatList();
+            switchTab('battle');
+
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка чтения JSON монстра!");
+        }
+    };
+    reader.readAsText(fileInput.files[0]);
+}
+
+// Обновим функцию отрисовки, чтобы видеть AC
+function renderCombatList() {
+    const list = document.getElementById('character-list');
+    list.innerHTML = '';
+    combatants.sort((a, b) => b.init - a.init);
+
+    combatants.forEach((unit, index) => {
+        const div = document.createElement('div');
+        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
+        div.innerHTML = `
+            <div style="position: relative;">
+                <img src="${unit.img || ''}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                ${unit.ac ? `<div class="ac-badge">${unit.ac}</div>` : ''}
+            </div>
+            <div>
+                <strong>${unit.name}</strong><br>
+                Инициатива: <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
+            </div>
+            <div class="hp-box">
+                HP: <span class="hp-value" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
+                    ${unit.currentHp}/${unit.maxHp}
+                </span>
+            </div>
+            <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
+        `;
+        list.appendChild(div);
+    });
 }
 
 async function sendDataToSheets(sheet, action, data) {
@@ -258,4 +316,5 @@ window.onload = () => {
         }
     });
 };
+
 
