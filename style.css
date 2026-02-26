@@ -467,6 +467,25 @@ body {
     position: relative; /* Обязательно для работы z-index */
 }
 
+/* Эффект свечения для эмодзи-иконок в навигации */
+.main-nav button::before {
+    content: attr(data-icon); /* Если добавишь атрибут, или просто стилизуй текст */
+    transition: 0.3s;
+}
+
+.main-nav button:hover {
+    color: var(--gold-bright);
+    text-shadow: 0 0 8px var(--gold-bright), 0 0 15px var(--gold);
+    transform: translateY(-2px);
+}
+
+/* Если хочешь, чтобы иконка светилась ПОСТОЯННО у активной вкладки */
+.main-nav button.active-tab {
+    text-shadow: 0 0 12px var(--gold-bright);
+    color: var(--gold-bright);
+}
+
+
 
 
 
