@@ -193,8 +193,10 @@ function renderCombatList() {
         const totalAC = (parseInt(unit.ac) || 0) + bonus;
 
         const div = document.createElement('div');
-        // Класс selected для золотой рамки
-        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
+// Проверяем, жив ли юнит
+const isDead = (parseInt(unit.currentHp) <= 0);
+// Добавляем класс unit-dead, если HP <= 0
+div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''}`;
         div.id = `unit-${index}`;
         
         // Клик по карточке — выбор юнита (золотая рамка)
@@ -401,7 +403,15 @@ function addMonsterToCombat(name, hp, ac, img, hpNote = "", acNote = "") {
 // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (HP, ИНИЦИАТИВА, ФОТО)
 function editInit(index) {
     let newVal = prompt("Инициатива:", combatants[index].init);
-    if (newVal !== null) { combatants[index].init = parseInt(newVal) || 0; saveData(); renderCombatList(); }
+    if (newVal !== null) { 
+        combatants[index].init = parseInt(newVal) || 0; 
+        
+        // СОРТИРОВКА: по убыванию (от большего к меньшему)
+        combatants.sort((a, b) => b.init - a.init);
+        
+        saveData(); 
+        renderCombatList(); 
+    }
 }
 
 function editHP(index) {
@@ -597,6 +607,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
