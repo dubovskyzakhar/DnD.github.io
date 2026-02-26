@@ -248,10 +248,7 @@ body {
 }
 
 .unit-note {
-    font-size: 0.75rem;
-    font-style: italic;
-    opacity: 0.8;
-    margin-top: 2px;
+    display: none;
 }
 
 .ac-note { color: #555; }
@@ -296,3 +293,4 @@ body {
 
 .lib-info { display: flex; align-items: center; cursor: pointer; flex-grow: 1; }
 .lib-info img { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; border: 1px solid var(--gold); }
+
