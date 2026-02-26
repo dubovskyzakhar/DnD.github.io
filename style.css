@@ -70,6 +70,7 @@ body {
     box-shadow: 5px 5px 15px var(--shadow);
     color: var(--text);
     position: relative;
+    min-height: 80px;
 }
 
 .character-card.monster-card {
@@ -119,7 +120,7 @@ body {
 .unit-info {
     display: flex;
     flex-direction: column;
-    min-width: 120px;
+    min-width: 150px;
 }
 
 .init-value {
@@ -138,31 +139,31 @@ body {
 .monster-card .init-value {
     color: var(--gold-bright);
     background: rgba(0,0,0,0.3);
+    border-color: var(--gold);
 }
 
 /* --- ПРАВЫЙ БЛОК: УПРАВЛЕНИЕ (ПРИЖАТО ВПРАВО) --- */
 .right-controls-group {
-    margin-left: auto; /* ГЛАВНЫЙ КЛЮЧ */
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-/* Модификаторы */
 .mod-buttons {
     display: flex;
-    gap: 4px;
+    gap: 6px;
 }
 
 .shield-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     background: rgba(0,0,0,0.05);
     color: inherit;
     border: 1px solid currentColor;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -182,7 +183,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* HP Сердце */
 .hp-heart-container {
     position: relative;
     width: 85px;
@@ -217,13 +217,12 @@ body {
 .hp-divider-slash { font-size: 1rem; opacity: 0.8; }
 .hp-max { font-size: 1rem; opacity: 0.9; }
 
-/* Корзина */
 .delete-btn {
     background: transparent;
     border: none;
     color: #a00;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     opacity: 0.2;
     transition: 0.3s;
     padding: 5px;
@@ -242,9 +241,9 @@ body {
     background: #2c1e14;
     color: var(--gold-bright);
     border: 1px solid var(--gold);
-    font-size: 9px;
-    padding: 1px 3px;
-    border-radius: 4px;
+    font-size: 8px;
+    padding: 1px 2px;
+    border-radius: 3px;
     white-space: nowrap;
 }
 
@@ -255,7 +254,10 @@ body {
     margin-top: 2px;
 }
 
-/* --- НАСТРОЙКИ (CONFIG) --- */
+.ac-note { color: #555; }
+.monster-card .ac-note { color: #ccc; }
+
+/* --- НАСТРОЙКИ И БИБЛИОТЕКИ --- */
 .config-card {
     background: rgba(0, 0, 0, 0.85);
     padding: 20px;
@@ -276,10 +278,10 @@ body {
     width: 100%; padding: 12px;
     background: var(--gold); color: #2c1e14;
     border: none; cursor: pointer;
-    font-weight: bold; font-family: 'Almendra', serif;
+    font-weight: bold;
+    font-family: 'Almendra', serif;
 }
 
-/* --- БИБЛИОТЕКА --- */
 .library-list {
     max-height: 300px;
     overflow-y: auto;
