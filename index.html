@@ -28,15 +28,13 @@
             
             <div class="config-row">
                 <div class="config-card flex-1">
-                    <h3>Библиотека героев (БД)</h3>
-                    <div class="custom-select-container" id="library-select-container">
-                        <div class="selected-option" onclick="toggleLibrary()">
-                            <span id="selected-text">-- Выберите героя --</span>
-                        </div>
-                        <div class="options-list" id="library-options"></div>
-                    </div>
-                    <button onclick="addFromLibrary()" style="margin-top: 10px;">Призвать выбранного</button>
-                </div>
+    <h3>Герои (из БД)</h3>
+    <div class="search-container">
+        <input type="text" id="hero-search" placeholder="Поиск героя..." oninput="filterHeroes()">
+    </div>
+    <div id="hero-library-list" class="library-list">
+        </div>
+</div>
 
                 <div class="config-card flex-1">
                     <h3>Новый герой (JSON)</h3>
@@ -78,6 +76,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
