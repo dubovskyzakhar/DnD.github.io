@@ -228,15 +228,49 @@ function changeBackground(event) {
 }
 
 window.onload = () => {
+    // Загрузка фона
     const bg = localStorage.getItem('dnd_bg');
     if(bg) document.getElementById('main-bg').style.backgroundImage = `url(${bg})`;
+    
     renderCombatList();
-    new Sortable(document.getElementById('character-list'), { animation: 150, onEnd: () => {
-        const items = Array.from(document.querySelectorAll('.character-card strong')).map(el => el.innerText);
-        combatants.sort((a, b) => items.indexOf(a.name) - items.indexOf(b.name));
-        saveData();
-    }});
+
+    // Инициализация сортировки
+    new Sortable(document.getElementById('character-list'), {
+        animation: 150,
+        onEnd: function (evt) {
+            // Если позиция не изменилась, ничего не делаем
+            if (evt.oldIndex === evt.newIndex) return;
+
+            // Вычисляем новую инициативу на основе соседей
+            let newInit;
+            
+            if (evt.newIndex === 0) {
+                // Если перетащили в самый верх — делаем на 1 больше, чем у бывшего первого
+                newInit = combatants[1].init + 1;
+            } else if (evt.newIndex === combatants.length - 1) {
+                // Если в самый низ — на 1 меньше, чем у бывшего последнего
+                newInit = combatants[combatants.length - 2].init - 1;
+            } else {
+                // Если в середину:
+                if (evt.newIndex < evt.oldIndex) {
+                    // Перетащили ВВЕРХ — ставим инициативу на 1 больше, чем у того, кто теперь ПОД ним
+                    newInit = combatants[evt.newIndex].init + 1;
+                } else {
+                    // Перетащили ВНИЗ — ставим инициативу на 1 меньше, чем у того, кто теперь НАД ним
+                    newInit = combatants[evt.newIndex].init - 1;
+                }
+            }
+
+            // Обновляем инициативу перемещенного элемента в массиве
+            combatants[evt.oldIndex].init = newInit;
+
+            // Пересортируем массив и сохраняем
+            saveData();
+            renderCombatList(); // Перерисовываем, чтобы цифры обновились
+        }
+    });
 };
+
 
 
 
