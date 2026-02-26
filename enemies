@@ -1,0 +1,16 @@
+
+async function addMonsterToDB(monsterData) {
+    const sheetName = 'Enemies';
+    const rowData = [
+        monsterData.name,     // Имя
+        monsterData.hp.average, // 8
+        monsterData.ac[0],    // 10
+        "",                   // Ссылка
+        monsterData.img || "", // Токен
+        monsterData.trait ? monsterData.trait[0].name : "", // Способность
+        monsterData.type      // construct
+    ];
+    
+    // Отправка в Google Sheets через твой API_URL
+    await sendDataToSheets(sheetName, 'add', rowData);
+}
