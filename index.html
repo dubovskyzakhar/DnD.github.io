@@ -28,16 +28,15 @@
             
             <div class="config-row">
                 <div class="config-card flex-1">
-    <h3>Библиотека героев (БД)</h3>
-    <div class="custom-select-container" id="library-select-container">
-        <div class="selected-option" onclick="toggleLibrary()">
-            <span id="selected-text">-- Выберите героя --</span>
-        </div>
-        <div class="options-list" id="library-options">
-            </div>
-    </div>
-    <input type="hidden" id="db-character-select-value"> <button onclick="addFromLibrary()" style="margin-top: 10px;">Призвать выбранного</button>
-</div>
+                    <h3>Библиотека героев (БД)</h3>
+                    <div class="custom-select-container" id="library-select-container">
+                        <div class="selected-option" onclick="toggleLibrary()">
+                            <span id="selected-text">-- Выберите героя --</span>
+                        </div>
+                        <div class="options-list" id="library-options"></div>
+                    </div>
+                    <button onclick="addFromLibrary()" style="margin-top: 10px;">Призвать выбранного</button>
+                </div>
 
                 <div class="config-card flex-1">
                     <h3>Новый герой (JSON)</h3>
@@ -48,16 +47,26 @@
 
             <div class="config-row">
                 <div class="config-card flex-1">
-    <h3>Бестиарий (Загрузка JSON)</h3>
-    <input type="file" id="monster-json" accept=".json">
-    <button onclick="importMonster()">Призвать монстра из файла</button>
-</div>
+                    <h3>Бестиарий (из БД)</h3>
+                    <div id="monster-library-list" class="library-list">
+                        </div>
+                </div>
 
+                <div class="config-card flex-1">
+                    <h3>Новый монстр (JSON)</h3>
+                    <input type="file" id="monster-json" accept=".json">
+                    <button onclick="importMonster()">Загрузить и призвать</button>
+                </div>
+            </div>
+
+            <div class="config-row">
                 <div class="config-card flex-1">
                     <h3>Атмосфера</h3>
                     <label>Фон приложения:</label>
                     <input type="file" id="bg-upload" onchange="changeBackground(event)">
                 </div>
+                <div class="config-card flex-1" style="visibility: hidden;">
+                    </div>
             </div>
 
         </div>
@@ -66,5 +75,6 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
