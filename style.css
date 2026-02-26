@@ -121,3 +121,38 @@ body {
     cursor: pointer;
     font-weight: bold;
 }
+
+.full-width-column {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.init-value {
+    cursor: pointer;
+    background: rgba(197, 160, 89, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.init-value:hover {
+    background: var(--gold);
+    color: #000;
+}
+
+/* Выделение монстров в общем списке */
+.character-card.is-monster {
+    border-left: 8px solid #a00;
+}
+
+#db-character-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #2c1e14;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+}
