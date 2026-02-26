@@ -46,6 +46,19 @@ function editBaseAC(index) {
     }
 }
 
+function changeBackground(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const url = e.target.result;
+            document.getElementById('main-bg').style.backgroundImage = `url(${url})`;
+            localStorage.setItem('dnd_bg', url);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 function addMonsterManual() {
     // Получаем данные из полей ввода (убедись, что ID совпадают с твоим HTML)
     const nameInput = document.getElementById('monster-name');
@@ -405,6 +418,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
