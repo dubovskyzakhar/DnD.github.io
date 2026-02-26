@@ -253,3 +253,33 @@ body {
 
 .lib-actions .btn-lib-upload { cursor: pointer; font-size: 1.2rem; }
 
+/* Стили для текстовых пометок под параметрами */
+.unit-note {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    font-style: italic;
+    margin-top: 3px;
+    max-width: 130px;
+    word-wrap: break-word;
+}
+
+/* Заметка под инициативой (Столбец G) */
+.ac-note {
+    color: var(--gold);
+    opacity: 0.9;
+}
+
+/* Заметка под хитами (Столбец H) */
+.hp-note {
+    color: inherit;
+    text-align: right;
+    opacity: 0.8;
+}
+
+/* В карточке монстра делаем текст белесым для читаемости */
+.monster-card .ac-note, 
+.monster-card .hp-note {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+
