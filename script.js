@@ -66,17 +66,33 @@ async function addMonsterManual() {
     const acField = document.getElementById('monster-ac');
     const imgField = document.getElementById('monster-img');
 
-    // Сценарий А: Если выбран JSON файл
     if (fileInput && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const monsterData = JSON.parse(e.target.result);
                 
-                // Извлекаем данные из JSON (ваша логика для сложных объектов)
                 const name = monsterData.name || "Новый монстр";
                 const hpAvg = monsterData.hp?.average || 10;
-                const hpFormula = monsterData.hp?.formula || "";
+                
+                // --- ЛОГИКА ОЧИСТКИ ДОП ХИТОВ ---
+                let hpFormula = monsterData.hp?.formula || "";
+                // Удаляем всё до первого знака "+" (например, "5 + текст" станет "+ текст")
+                if (hpFormula.includes('+')) {
+                    hpFormula = hpFormula.substring(hpFormula.indexOf('+')).trim();
+                }
+
+                // --- ЛОГИКА ФОТО ---
+                let img = monsterData.img || "";
+                if (!img) {
+                    // Генерируем ссылку по названию: "Drake Companion" -> "drake_companion"
+                    const slug = name.split('[')[0] // убираем русское название в скобках если есть
+                        .toLowerCase()
+                        .trim()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^\w\s]/gi, '');
+                    img = `https://img.ttg.club/tokens/round/${slug}.webp`;
+                }
                 
                 let acVal = 10;
                 let acNote = "";
@@ -95,25 +111,26 @@ async function addMonsterManual() {
                     hp: hpAvg,
                     ac: acVal,
                     type: monsterData.type || "unknown",
-                    img: monsterData.img || "",
+                    img: img,
                     description: monsterData.trait ? monsterData.trait[0].name : "Загружен из JSON",
                     acNote: acNote,
                     hpNote: hpFormula
                 };
 
-                addMonsterToCombat(name, `${hpAvg} (${hpFormula})`, `${acVal} ${acNote}`, dbData.img);
+                addMonsterToCombat(name, `${hpAvg} ${hpFormula}`, `${acVal} ${acNote}`, dbData.img);
                 await addMonsterToDB(dbData);
                 
-                alert(`Монстр ${name} добавлен из файла!`);
+                alert(`Монстр ${name} добавлен!`);
                 fileInput.value = ''; 
             } catch (err) {
+                console.error(err);
                 alert("Ошибка в формате JSON!");
             }
         };
         reader.readAsText(fileInput.files[0]);
     } 
-    // Сценарий Б: Если файла нет, берем данные из полей ввода (ВРУЧНУЮ)
     else if (nameField && nameField.value.trim() !== "") {
+        // Логика ручного ввода (оставляем как была)
         const dbData = {
             name: nameField.value,
             hp: parseInt(hpField.value) || 10,
@@ -124,19 +141,10 @@ async function addMonsterManual() {
             acNote: "",
             hpNote: ""
         };
-
         addMonsterToCombat(dbData.name, dbData.hp, dbData.ac, dbData.img);
         await addMonsterToDB(dbData);
-        
         alert(`Монстр ${dbData.name} добавлен вручную!`);
-        
-        // Очистка
-        nameField.value = '';
-        hpField.value = '';
-        acField.value = '';
-        imgField.value = '';
-    } else {
-        alert("Заполните имя монстра или выберите JSON файл!");
+        nameField.value = ''; hpField.value = ''; acField.value = ''; imgField.value = '';
     }
 }
 
@@ -520,6 +528,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
