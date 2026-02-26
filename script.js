@@ -65,6 +65,7 @@ async function addMonsterManual() {
     const hpField = document.getElementById('monster-hp');
     const acField = document.getElementById('monster-ac');
 
+    // СЦЕНАРИЙ А: ЗАГРУЗКА ЧЕРЕЗ JSON
     if (fileInput && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -72,39 +73,49 @@ async function addMonsterManual() {
                 const monsterData = JSON.parse(e.target.result);
                 const fullName = monsterData.name || "Новый монстр";
                 
-                // --- 1. ЛОГИКА ФОТО (Извлекаем English Name из скобок) ---
+                // --- 1. ЛОГИКА ФОТО ---
                 let img = monsterData.img || "";
                 if (!img) {
+                    // Извлекаем английское имя из скобок [English Name]
                     const engNameMatch = fullName.match(/\[(.*?)\]/);
                     const nameToProcess = engNameMatch ? engNameMatch[1] : fullName;
                     const slug = nameToProcess
                         .toLowerCase()
                         .trim()
-                        .replace(/\s+/g, '_')     // пробелы в подчеркивания
+                        .replace(/\s+/g, '_')     // пробелы в _
                         .replace(/[^\w]/g, '');   // удаляем всё кроме букв и _
                     img = `https://img.ttg.club/tokens/round/${slug}.webp`;
                 }
 
-                // --- 2. ЛОГИКА ОЧИСТКИ ДОП ХИТОВ ---
+                // --- 2. ЛОГИКА ДОП ХИТОВ ---
                 let hpFormula = monsterData.hp?.formula || "";
                 let finalHpNote = "";
-                
-                // Проверяем: если это НЕ кости хитов (нет символа 'd' между цифрами)
+                // Если формула не является просто кубами (например, не "5d8+5")
                 if (hpFormula && !/^\d+d\d+/.test(hpFormula)) {
                     if (hpFormula.includes('+')) {
-                        // Забираем только то, что ПОСЛЕ плюса
+                        // Сохраняем только ТЕКСТ после плюса
                         finalHpNote = hpFormula.substring(hpFormula.indexOf('+') + 1).trim();
                     }
                 }
-                // Если это формат "5d8+5", finalHpNote останется пустым
 
+                // --- 3. ЛОГИКА КД (AC) И БОНУСА МАСТЕРСТВА ---
                 let acVal = 10;
                 let acNote = "";
                 if (Array.isArray(monsterData.ac)) {
                     const firstAC = monsterData.ac[0];
                     if (typeof firstAC === 'object') {
                         acVal = firstAC.ac;
-                        acNote = firstAC.from ? firstAC.from.join(", ") : "";
+                        // Проверяем источники КД на наличие БМ
+                        if (firstAC.from) {
+                            acNote = firstAC.from.map(s => 
+                                s.replace(/\{@bonus\s+pb\}/g, "бонус мастерства")
+                                 .replace(/plus your Proficiency Bonus/gi, "бонус мастерства")
+                            ).join(", ");
+                        }
+                        // Если в описании или типе есть намек на БМ (для призываемых существ)
+                        if (JSON.stringify(monsterData).includes("Proficiency Bonus") && !acNote.includes("мастерства")) {
+                            acNote += (acNote ? ", " : "") + "бонус мастерства";
+                        }
                     } else {
                         acVal = firstAC;
                     }
@@ -118,42 +129,53 @@ async function addMonsterManual() {
                     img: img,
                     description: monsterData.trait ? monsterData.trait[0].name : "JSON",
                     acNote: acNote,
-                    hpNote: finalHpNote // Здесь только текст без "+"
+                    hpNote: finalHpNote
                 };
 
+                // Добавляем в бой и в БД
                 addMonsterToCombat(dbData.name, dbData.hp, dbData.ac, dbData.img, dbData.hpNote, dbData.acNote);
                 await addMonsterToDB(dbData);
                 
-                alert(`Монстр ${fullName} добавлен!`);
+                alert(`Монстр ${fullName} успешно добавлен!`);
                 fileInput.value = ''; 
             } catch (err) {
-                alert("Ошибка в формате JSON!");
+                console.error(err);
+                alert("Ошибка при чтении файла!");
             }
         };
         reader.readAsText(fileInput.files[0]);
-    } else if (nameField && nameField.value) {
-        // Логика ручного ввода (аналогично)
-        // ... (ваш текущий код ручного ввода)
+    } 
+    // СЦЕНАРИЙ Б: РУЧНОЙ ВВОД
+    else if (nameField && nameField.value.trim() !== "") {
+        const dbData = {
+            name: nameField.value,
+            hp: parseInt(hpField.value) || 10,
+            ac: parseInt(acField.value) || 10,
+            type: "manual",
+            img: 'https://i.imgur.com/83p7pId.png',
+            description: "Вручную",
+            acNote: "",
+            hpNote: ""
+        };
+        addMonsterToCombat(dbData.name, dbData.hp, dbData.ac, dbData.img, "", "");
+        await addMonsterToDB(dbData);
+        nameField.value = ''; hpField.value = ''; acField.value = '';
     }
 }
 
 async function addMonsterToDB(monsterData) {
     const sheetName = 'Enemies';
-    
-    // Твой строгий порядок (8 столбцов):
-    // 1. Название | 2. Хиты | 3. КД | 4. Тип | 5. Фото | 6. Описание | 7. Доп КД | 8. Доп хиты
     const rowData = [
-        monsterData.name,        // A
-        monsterData.hp,          // B
-        monsterData.ac,          // C
-        monsterData.type,        // D
-        monsterData.img,         // E
-        monsterData.description, // F
-        monsterData.acNote,      // G
-        monsterData.hpNote       // H
+        monsterData.name,        // 1. Название монстров
+        monsterData.hp,          // 2. Число хитов
+        monsterData.ac,          // 3. Класс доспеха
+        monsterData.type,        // 4. Тип
+        monsterData.img,         // 5. Фото
+        monsterData.description, // 6. Описание
+        monsterData.acNote,      // 7. Доп класс защиты
+        monsterData.hpNote       // 8. Доп хиты
     ];
     
-    // Используем уже существующую функцию POST запроса
     await sendDataToSheets(sheetName, 'add', rowData);
 }
 
@@ -181,52 +203,48 @@ function renderCombatList() {
     if (!list) return;
     list.innerHTML = '';
     
-    combatants.sort((a, b) => b.init - a.init);
-
     combatants.forEach((unit, index) => {
-        // Проверяем наличие модов
         if (!unit.mods) unit.mods = { shield: false, cover: null };
-
-        // Считаем итоговый AC
-        let bonus = 0;
-        if (unit.mods.shield) bonus += 2;
-        if (unit.mods.cover === '1/2') bonus += 2;
-        if (unit.mods.cover === '3/4') bonus += 5;
-        
+        let bonus = (unit.mods.shield ? 2 : 0) + (unit.mods.cover === '1/2' ? 2 : 0) + (unit.mods.cover === '3/4' ? 5 : 0);
         const totalAC = (parseInt(unit.ac) || 0) + bonus;
 
         const div = document.createElement('div');
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
         
-        // Внутри combatants.forEach((unit, index) => { ...
+        div.innerHTML = `
+            <div class="avatar-container">
+                <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
+                <div class="ac-badge" onclick="editBaseAC(${index})">
+                    ${totalAC}
+                    ${unit.acNote && unit.acNote.includes('мастерства') ? '<span class="pb-label">+БМ</span>' : ''}
+                </div>
+            </div>
 
-div.innerHTML = `
-    <div class="avatar-container">
-        <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
-        <div class="ac-badge" onclick="editBaseAC(${index})">${totalAC}</div>
-    </div>
+            <div class="unit-info">
+                <strong>${unit.name}</strong><br>
+                <small>Инист:</small> <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
+                ${unit.acNote ? `<div class="unit-note ac-note">${unit.acNote}</div>` : ''}
+            </div>
 
-    <div style="flex-grow: 1; margin-left: 10px;">
-        <strong>${unit.name}</strong><br>
-        <small>Инициатива:</small> <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
-        ${unit.acNote ? `<div class="unit-note ac-note">${unit.acNote}</div>` : ''}
-    </div>
+            <div class="hp-heart-container" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
+                <svg viewBox="0 0 32 32" class="hp-heart-svg">
+                    <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
+                </svg>
+                <div class="hp-text-overlay">
+                    <span class="hp-current">${unit.currentHp}</span>
+                    <span class="hp-divider">/</span>
+                    <span class="hp-max">${unit.maxHp}</span>
+                </div>
+                ${unit.hpNote ? `<div class="unit-note hp-note">+ ${unit.hpNote}</div>` : ''}
+            </div>
 
-    <div class="mod-buttons">
-        <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')" title="+2 Щит">🛡️+</button>
-        <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')">1/2</button>
-        <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="toggleMod(${index}, '3/4')">3/4</button>
-    </div>
-
-    <div class="hp-box">
-        <span class="hp-value" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
-            ${unit.currentHp}/${unit.maxHp}
-        </span>
-        ${unit.hpNote ? `<div class="unit-note hp-note">${unit.hpNote}</div>` : ''}
-    </div>
-    
-    <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
-`;
+            <div class="mod-buttons">
+                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')">🛡️</button>
+                <button class="shield-btn ${unit.mods.cover ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')">½</button>
+            </div>
+            
+            <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
+        `;
         list.appendChild(div);
     });
 }
@@ -354,9 +372,9 @@ function addMonsterToCombat(name, hp, ac, img, hpNote = "", acNote = "") {
         name: name,
         maxHp: parseInt(hp) || 10,
         currentHp: parseInt(hp) || 10,
-        hpNote: hpNote, // Чистый текст из БД
+        hpNote: hpNote, // Чистый текст (например: "пятикратный уровень следопыта")
         ac: parseInt(ac) || 10,
-        acNote: acNote,
+        acNote: acNote, // Чистый текст (например: "natural armor, бонус мастерства")
         init: 0,
         img: img,
         type: 'monster',
@@ -501,6 +519,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
