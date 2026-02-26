@@ -76,10 +76,10 @@ body {
 }
 
 .hp-value {
-    font-size: 1.4rem;
-    color: #a00;
-    cursor: ns-resize;
-    user-select: none;
+    cursor: pointer; /* Показывает палец при наведении */
+    border-bottom: 1px dashed rgba(170, 0, 0, 0.3); /* Легкое подчеркивание */
+    padding: 2px 5px;
+    transition: background 0.2s;
 }
 
 /* Настройки (Светлые буквы на темном) */
@@ -136,3 +136,9 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(197, 160, 89, 0.4);
 }
+
+.hp-value:hover {
+    background: rgba(170, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
