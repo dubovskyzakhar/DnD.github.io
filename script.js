@@ -1,7 +1,7 @@
 let characters = JSON.parse(localStorage.getItem('dnd_chars')) || [];
 let monsters = [];
 
-// ЗАМЕНИТЕ НА ВАШУ ССЫЛКУ ПОСЛЕ "НОВОГО РАЗВЕРТЫВАНИЯ"
+// ВСТАВЬТЕ СЮДА СВОЮ ССЫЛКУ ПОСЛЕ ОБНОВЛЕНИЯ РАЗВЕРТЫВАНИЯ
 const API_URL = "https://script.google.com/macros/s/...ВАШ_ID.../exec"; 
 
 function switchTab(tabId) {
@@ -9,7 +9,6 @@ function switchTab(tabId) {
     document.getElementById(tabId + '-tab').classList.add('active');
 }
 
-// ОБНОВЛЕННЫЙ РЕНДЕР ГЕРОЕВ
 function renderCharacters() {
     const list = document.getElementById('character-list');
     list.innerHTML = '';
@@ -25,13 +24,12 @@ function renderCharacters() {
                     ${char.currentHp}/${char.maxHp}
                 </span>
             </div>
-            <button class="delete-btn" onclick="deleteItem('char', ${index})" title="Удалить">🗑️</button>
+            <button class="delete-btn" onclick="deleteItem('char', ${index})">🗑️</button>
         `;
         list.appendChild(div);
     });
 }
 
-// ОБНОВЛЕННЫЙ РЕНДЕР МОНСТРОВ
 function renderMonsters() {
     const list = document.getElementById('monster-list');
     list.innerHTML = '';
@@ -47,40 +45,33 @@ function renderMonsters() {
                     ${m.currentHp}/${m.maxHp}
                 </span>
             </div>
-            <button class="delete-btn" onclick="deleteItem('monster', ${index})" title="Удалить">🗑️</button>
+            <button class="delete-btn" onclick="deleteItem('monster', ${index})">🗑️</button>
         `;
         list.appendChild(div);
     });
 }
 
-// ФУНКЦИЯ УДАЛЕНИЯ
-function deleteItem(type, index) {
-    if (!confirm("Удалить персонажа из списка?")) return;
-
-    if (type === 'char') {
-        characters.splice(index, 1);
-        renderCharacters();
-    } else {
-        monsters.splice(index, 1);
-        renderMonsters();
-    }
-    saveData(); // Сохраняем изменения в браузере
-}
-
 function changeHP(e, type, index) {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
-    if(type === 'char') characters[index].currentHp = Math.max(0, parseInt(characters[index].currentHp) + delta);
-    else monsters[index].currentHp = Math.max(0, parseInt(monsters[index].currentHp) + delta);
+    let target = (type === 'char') ? characters[index] : monsters[index];
+    target.currentHp = Math.max(0, parseInt(target.currentHp) + delta);
     renderCharacters(); renderMonsters(); saveData();
 }
 
 function editHP(type, index) {
-    let current = (type === 'char') ? characters[index].currentHp : monsters[index].currentHp;
-    let newVal = prompt("Введите текущее HP:", current);
+    let target = (type === 'char') ? characters[index] : monsters[index];
+    let newVal = prompt("Введите текущее HP:", target.currentHp);
     if (newVal !== null && !isNaN(newVal)) {
-        if (type === 'char') characters[index].currentHp = parseInt(newVal);
-        else monsters[index].currentHp = parseInt(newVal);
+        target.currentHp = parseInt(newVal);
+        renderCharacters(); renderMonsters(); saveData();
+    }
+}
+
+function deleteItem(type, index) {
+    if (confirm("Удалить персонажа?")) {
+        if (type === 'char') characters.splice(index, 1);
+        else monsters.splice(index, 1);
         renderCharacters(); renderMonsters(); saveData();
     }
 }
@@ -93,7 +84,7 @@ async function importCharacter() {
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
-            let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : raw;
+            let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
 
             const newChar = {
                 name: data.name?.value || data.name || "Герой",
@@ -106,12 +97,11 @@ async function importCharacter() {
             characters.push(newChar);
             renderCharacters(); saveData();
             
-            // Отправка в Таблицу (Characters)
-            sendDataToSheets('Characters', 'add', [newChar.name, newChar.maxHp, newChar.currentHp, newChar.init, newChar.img]);
+            // Отправка данных
+            await sendDataToSheets('Characters', 'add', [newChar.name, newChar.maxHp, newChar.currentHp, newChar.init, newChar.img]);
             
-            alert("Герой призван и записан в таблицу!");
             fileInput.value = "";
-        } catch (err) { alert("Ошибка чтения JSON!"); }
+        } catch (err) { alert("Ошибка JSON!"); }
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -134,25 +124,23 @@ async function addMonsterByUrl() {
         monsters.push(newM);
         renderMonsters();
         
-        // Отправка в Таблицу (Monsters)
-        sendDataToSheets('Monsters', 'add', [newM.name, newM.maxHp, newM.currentHp, newM.init, newM.img]);
-        
+        await sendDataToSheets('Monsters', 'add', [newM.name, newM.maxHp, newM.currentHp, newM.init, newM.img]);
         urlInput.value = "";
-    } catch (e) { alert("Ошибка загрузки монстра!"); }
+    } catch (e) { alert("Ошибка загрузки!"); }
 }
 
 async function sendDataToSheets(sheet, action, data) {
-    // ВАЖНО: Google Apps Script требует POST для doPost
-    fetch(API_URL, { 
-        method: 'POST', 
-        mode: 'no-cors', // Позволяет обойти CORS, но ответ будет пустым
-        body: JSON.stringify({ sheet, action, data }) 
-    });
-}
-
-// Функция для кнопки "Очистить таблицу" (если захотите добавить её в интерфейс)
-async function clearSheet(sheetName) {
-    sendDataToSheets(sheetName, 'clear', []);
+    try {
+        await fetch(API_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', // Важно для работы с Google из браузера
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sheet, action, data }) 
+        });
+        console.log("Данные успешно отправлены в " + sheet);
+    } catch (e) {
+        console.error("Ошибка отправки в таблицу:", e);
+    }
 }
 
 function saveData() { localStorage.setItem('dnd_chars', JSON.stringify(characters)); }
@@ -184,4 +172,3 @@ window.onload = () => {
         }
     });
 };
-
