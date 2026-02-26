@@ -48,10 +48,10 @@
 
             <div class="config-row">
                 <div class="config-card flex-1">
-                    <h3>Бестиарий (ttg.club / dnd.su)</h3>
-                    <input type="text" id="monster-url" placeholder="Вставьте ссылку на монстра...">
-                    <button onclick="addMonsterByUrl()">Призвать монстра</button>
-                </div>
+    <h3>Бестиарий (Загрузка JSON)</h3>
+    <input type="file" id="monster-json" accept=".json">
+    <button onclick="importMonster()">Призвать монстра из файла</button>
+</div>
 
                 <div class="config-card flex-1">
                     <h3>Атмосфера</h3>
@@ -66,4 +66,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
