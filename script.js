@@ -183,22 +183,23 @@ function displayMonsters(monsters) {
     
     monsters.forEach((item) => {
         const values = Object.values(item);
-        // Защита: если поля нет в объекте, берем из массива значений или ставим дефолт
-        const name = (item["Имя"] || values[0] || "Монстр").replace(/'/g, "\\'"); // Экранируем кавычки в именах
-        const hp = parseInt(item["MaxHP"] || values[1]) || 0;
-        const ac = parseInt(item["AC"] || values[2]) || 0;
+        // Индексы зависят от твоей таблицы (обычно: 0-Имя, 1-HP, 2-AC, 4-Фото, 6-AC Note, 7-HP Note)
+        const name = (item["Имя"] || values[0] || "Монстр").replace(/'/g, "\\'");
+        
+        // Берем сырые данные (вместе с текстом), чтобы addMonsterToCombat их распарсила
+        const hpRaw = item["MaxHP"] || values[1] || "10";
+        const acRaw = item["AC"] || values[2] || "10";
         const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
 
         const div = document.createElement('div');
         div.className = 'library-item';
-        // Передаем параметры как строки, чтобы избежать пустых мест в JS
         div.innerHTML = `
-            <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
+            <div class="lib-info" onclick="addMonsterToCombat('${name}', '${hpRaw}', '${acRaw}', '${img}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} ${ac > 0 ? `<small>(AC: ${ac})</small>` : ''}</span>
+                <span>${name} <small>(AC: ${acRaw})</small></span>
             </div>
             <div class="lib-actions">
-                <label class="btn-lib-upload" title="Обновить фото">
+                <label class="btn-lib-upload">
                     📷
                     <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event, 'Enemies')">
                 </label>
@@ -404,6 +405,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
