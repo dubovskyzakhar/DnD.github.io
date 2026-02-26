@@ -15,6 +15,37 @@ function switchTab(tabId) {
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
+// Функция переключения модификаторов
+function toggleMod(index, modType) {
+    const unit = combatants[index];
+    
+    // Инициализируем объект модов, если его нет
+    if (!unit.mods) unit.mods = { shield: false, cover: null };
+
+    if (modType === 'shield') {
+        unit.mods.shield = !unit.mods.shield;
+    } 
+    else if (modType === '1/2') {
+        unit.mods.cover = (unit.mods.cover === '1/2') ? null : '1/2';
+    } 
+    else if (modType === '3/4') {
+        unit.mods.cover = (unit.mods.cover === '3/4') ? null : '3/4';
+    }
+
+    saveData();
+    renderCombatList();
+}
+
+// Функция редактирования БАЗОВОГО AC
+function editBaseAC(index) {
+    let newVal = prompt("Базовый Класс Защиты:", combatants[index].ac || 10);
+    if (newVal !== null) {
+        combatants[index].ac = parseInt(newVal) || 0;
+        saveData();
+        renderCombatList();
+    }
+}
+
 function renderCombatList() {
     const list = document.getElementById('character-list');
     if (!list) return;
@@ -23,27 +54,50 @@ function renderCombatList() {
     combatants.sort((a, b) => b.init - a.init);
 
     combatants.forEach((unit, index) => {
+        // Проверяем наличие модов
+        if (!unit.mods) unit.mods = { shield: false, cover: null };
+
+        // Считаем итоговый AC
+        let bonus = 0;
+        if (unit.mods.shield) bonus += 2;
+        if (unit.mods.cover === '1/2') bonus += 2;
+        if (unit.mods.cover === '3/4') bonus += 5;
+        
+        const totalAC = (parseInt(unit.ac) || 0) + bonus;
+
         const div = document.createElement('div');
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
-        
-        // Проверяем наличие AC для бейджика
-        const acBadge = (unit.ac && unit.ac > 0) ? `<div class="ac-badge">${unit.ac}</div>` : '';
         
         div.innerHTML = `
             <div style="position: relative;" class="avatar-container">
                 <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
                 
-                <label class="upload-badge" title="Загрузить фото">
+                <label class="upload-badge">
                     📷
                     <input type="file" accept="image/*" style="display:none" onchange="updateUnitPhoto(event, ${index})">
                 </label>
 
-                ${acBadge} 
+                <div class="ac-badge" onclick="editBaseAC(${index})" title="Нажми, чтобы изменить базу">
+                    ${totalAC}
+                </div>
             </div>
-            <div>
+
+            <div style="flex-grow: 1; margin-left: 10px;">
                 <strong>${unit.name}</strong><br>
                 Инициатива: <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
             </div>
+
+            <div class="mod-buttons">
+                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" 
+                        onclick="toggleMod(${index}, 'shield')" title="+2 (Щит)">🛡️+</button>
+                
+                <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" 
+                        onclick="toggleMod(${index}, '1/2')" title="+2 (Укрытие 1/2)">1/2</button>
+                
+                <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" 
+                        onclick="toggleMod(${index}, '3/4')" title="+5 (Укрытие 3/4)">3/4</button>
+            </div>
+
             <div class="hp-box">
                 HP: <span class="hp-value" onclick="editHP(${index})" onwheel="changeHP(event, ${index})">
                     ${unit.currentHp}/${unit.maxHp}
@@ -312,5 +366,6 @@ window.onload = () => {
         });
     }
 };
+
 
 
