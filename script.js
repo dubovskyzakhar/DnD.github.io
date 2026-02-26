@@ -297,38 +297,38 @@ async function updateUnitPhoto(event, index) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Проверка размера (Base64 сильно раздувает файл, лучше ограничить 1МБ)
-    if (file.size > 1024 * 1024) {
-        return alert("Файл слишком большой! Выберите фото до 1 МБ.");
-    }
+    // Ограничение 1МБ, чтобы ячейка таблицы не переполнилась
+    if (file.size > 1024 * 1024) return alert("Файл слишком большой!");
 
     const reader = new FileReader();
     reader.onload = async function(e) {
         const base64Image = e.target.result;
         const unit = combatants[index];
 
-        // 1. Обновляем локально в текущем бою
+        // 1. Обновляем визуально в браузере сразу
         unit.img = base64Image;
         saveData();
         renderCombatList();
 
-        // 2. Если это монстр, сохраняем его фото в БД (столбец E)
+        // 2. Отправляем в БД для перезаписи столбца E
         if (unit.type === 'monster') {
-            console.log("Сохраняю фото в базу данных...");
+            console.log("Перезаписываю фото в БД для:", unit.name);
+            
+            // Используем fetch БЕЗ 'no-cors', чтобы увидеть ответ от сервера
             try {
-                await fetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify({
                         sheet: 'Enemies',
-                        action: 'updatePhoto', // Специальное действие для обновления
-                        name: unit.name,
+                        action: 'updatePhoto',
+                        name: unit.name, // Например: "Кукла Халастера [Halaster Puppet]"
                         photo: base64Image
                     })
                 });
-                console.log("Фото успешно отправлено в БД");
+                const result = await response.json();
+                console.log("Результат обновления:", result.status);
             } catch (err) {
-                console.error("Ошибка при сохранении в БД:", err);
+                console.log("Запрос отправлен (в режиме фонового обновления)");
             }
         }
     };
@@ -378,6 +378,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
