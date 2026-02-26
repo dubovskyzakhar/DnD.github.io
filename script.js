@@ -293,20 +293,44 @@ function changeBackground(event) {
     reader.readAsDataURL(event.target.files[0]);
 }
 
-function updateUnitPhoto(event, index) {
+async function updateUnitPhoto(event, index) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // Проверка размера (Base64 сильно раздувает файл, лучше ограничить 1МБ)
+    if (file.size > 1024 * 1024) {
+        return alert("Файл слишком большой! Выберите фото до 1 МБ.");
+    }
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         const base64Image = e.target.result;
-        
-        // Обновляем фото в массиве текущего боя
-        combatants[index].img = base64Image;
-        
-        // Сохраняем изменения
+        const unit = combatants[index];
+
+        // 1. Обновляем локально в текущем бою
+        unit.img = base64Image;
         saveData();
         renderCombatList();
+
+        // 2. Если это монстр, сохраняем его фото в БД (столбец E)
+        if (unit.type === 'monster') {
+            console.log("Сохраняю фото в базу данных...");
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        sheet: 'Enemies',
+                        action: 'updatePhoto', // Специальное действие для обновления
+                        name: unit.name,
+                        photo: base64Image
+                    })
+                });
+                console.log("Фото успешно отправлено в БД");
+            } catch (err) {
+                console.error("Ошибка при сохранении в БД:", err);
+            }
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -354,6 +378,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
