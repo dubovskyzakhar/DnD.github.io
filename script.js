@@ -91,32 +91,63 @@ async function importCharacter() {
 
 async function loadLibrary() {
     const select = document.getElementById('db-character-select');
+    if (!select) return;
+
     try {
-        const resp = await fetch(`${API_URL}?sheet=Characters`);
-        const data = await resp.json();
+        const response = await fetch(`${API_URL}?sheet=Characters`);
+        const data = await response.json();
+        
         select.innerHTML = '<option value="">-- Выберите героя --</option>';
+        
         data.forEach(item => {
+            // Ищем имя: проверяем все возможные варианты заголовков
+            const charName = item["Имя"] || item["name"] || item["Name"] || item[0] || "Неизвестный";
+            // Ищем фото: проверяем все возможные варианты (Столбец E обычно "Фото" или "img")
+            const charImg = item["Фото"] || item["img"] || item["Image"] || item["avatar"] || item[4];
+
             const opt = document.createElement('option');
-            opt.value = JSON.stringify(item);
-            opt.textContent = "👤 " + (item["Имя"] || item["name"]);
+            
+            // Сохраняем данные в объект, чтобы не потерять иконку при добавлении
+            const cleanData = {
+                name: charName,
+                maxHp: item["MaxHP"] || item["maxhp"] || 10,
+                img: charImg
+            };
+
+            opt.value = JSON.stringify(cleanData);
+            opt.textContent = `👤 ${charName}`; // Добавляем эмодзи для красоты
             select.appendChild(opt);
         });
-    } catch (e) { select.innerHTML = '<option>Ошибка загрузки БД</option>'; }
+        console.log("Библиотека загружена:", data);
+    } catch (e) {
+        console.error("Ошибка библиотеки:", e);
+        select.innerHTML = '<option>Ошибка доступа к БД</option>';
+    }
 }
 
 function addFromLibrary() {
     const select = document.getElementById('db-character-select');
-    if (!select.value) return;
-    const data = JSON.parse(select.value);
-    combatants.push({
-        name: data["Имя"] || data["name"],
-        maxHp: parseInt(data["MaxHP"] || 10),
-        currentHp: parseInt(data["MaxHP"] || 10),
-        init: Math.floor(Math.random() * 20) + 1,
-        img: data["Фото"] || data["фото"] || "",
-        type: 'hero'
-    });
-    saveData(); renderCombatList(); switchTab('battle');
+    if (!select || !select.value) return alert("Сначала выберите героя!");
+
+    try {
+        const data = JSON.parse(select.value);
+        
+        const newUnit = {
+            name: data.name,
+            maxHp: parseInt(data.maxHp) || 10,
+            currentHp: parseInt(data.maxHp) || 10,
+            init: Math.floor(Math.random() * 20) + 1, // Бросок инициативы
+            img: data.img || "",
+            type: 'hero'
+        };
+
+        combatants.push(newUnit);
+        saveData();
+        renderCombatList();
+        switchTab('battle');
+    } catch (err) {
+        alert("Ошибка при добавлении из библиотеки");
+    }
 }
 
 async function addMonsterByUrl() {
@@ -158,3 +189,4 @@ window.onload = () => {
         saveData();
     }});
 };
+
