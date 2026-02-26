@@ -18,23 +18,26 @@ function switchTab(tabId) {
 async function addMonsterToDB(monsterData) {
     const sheetName = 'Enemies';
     
-    // Формируем массив строки точно в том порядке, как идут столбцы в твоей таблице
-    // Обычно: Имя, HP, AC, Ссылка, Фото, Способность, Тип
+    // Формируем строку строго по твоему порядку (8 столбцов)
     const rowData = [
-        monsterData.name || "Новый монстр",             // Столбец A (Имя)
-        monsterData.hp?.average || monsterData.hp || "10", // Столбец B (HP)
-        monsterData.ac?.[0] || monsterData.ac || "10",     // Столбец C (AC)
-        "",                                             // Столбец D (Ссылка)
-        monsterData.img || "",                          // Столбец E (Фото/Токен)
-        monsterData.trait ? monsterData.trait[0].name : "Вручную", // Столбец F (Способность)
-        monsterData.type || "manual"                    // Столбец G (Тип)
+        monsterData.name,               // 1. Название монстров
+        monsterData.hp?.average || "10", // 2. Число хитов
+        monsterData.ac?.[0] || "10",     // 3. Класс доспеха
+        monsterData.type || "manual",    // 4. Тип
+        monsterData.img || "",           // 5. Фото
+        monsterData.description || "",   // 6. Описание (можно оставить пустым)
+        monsterData.acNote || "",        // 7. Доп класс защиты
+        monsterData.hpNote || ""         // 8. Доп хиты
     ];
     
-    console.log("Отправка в БД:", rowData);
+    console.log("Отправка в БД (порядок столбцов соблюден):", rowData);
 
-    // Вызываем твою основную функцию отправки
-    // Важно: Убедись, что функция sendDataToSheets определена в коде!
-    await sendDataToSheets(sheetName, 'add', rowData);
+    // Отправка через fetch
+    if (typeof sendDataToSheets === "function") {
+        await sendDataToSheets(sheetName, 'add', rowData);
+    } else {
+        console.error("Ошибка: Функция sendDataToSheets не найдена!");
+    }
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -83,43 +86,44 @@ function changeBackground(event) {
 }
 
 async function addMonsterManual() {
-    const nameInput = document.getElementById('monster-name');
-    const hpInput = document.getElementById('monster-hp');
-    const acInput = document.getElementById('monster-ac');
-    const imgInput = document.getElementById('monster-img');
+    const name = document.getElementById('monster-name')?.value || "Новый монстр";
+    const hpRaw = document.getElementById('monster-hp')?.value || "10";
+    const acRaw = document.getElementById('monster-ac')?.value || "10";
+    const img = document.getElementById('monster-img')?.value || 'https://i.imgur.com/83p7pId.png';
 
-    const name = nameInput ? nameInput.value : "Новый монстр";
-    const hp = hpInput ? hpInput.value : "10";
-    const ac = acInput ? acInput.value : "10";
-    const img = (imgInput && imgInput.value) ? imgInput.value : 'https://i.imgur.com/83p7pId.png';
+    // 1. Добавляем в список боя (на экран)
+    addMonsterToCombat(name, hpRaw, acRaw, img);
 
-    // 1. Добавляем в текущий бой (на экран)
-    addMonsterToCombat(name, hp, ac, img);
-
-    // 2. Подготавливаем данные для базы данных
-    // Важно: структура должна соответствовать тому, что ждет addMonsterToDB
-    const monsterData = {
-        name: name,
-        hp: { average: hp }, // Передаем строку как есть (с кубами, если ввели)
-        ac: [ac],            // Передаем строку как есть (с текстом, если ввели)
-        img: img,
-        type: "manual",      // Пометка, что добавлен вручную
-        trait: [{ name: "Добавлен вручную" }]
+    // 2. Парсим данные для базы (отделяем числа от заметок в скобках)
+    const parseValue = (str) => {
+        const s = str.toString();
+        const match = s.match(/^(\d+)/);
+        const val = match ? match[1] : "0";
+        let note = s.replace(/^\d+/, "").replace(/[()]/g, "").trim();
+        return { val, note };
     };
 
-    try {
-        // Вызываем твою функцию записи в БД
-        await addMonsterToDB(monsterData);
-        console.log("Монстр успешно отправлен в таблицу");
-    } catch (e) {
-        console.error("Ошибка при записи в БД:", e);
-    }
+    const hpData = parseValue(hpRaw);
+    const acData = parseValue(acRaw);
 
-    // Очищаем поля
-    if (nameInput) nameInput.value = '';
-    if (hpInput) hpInput.value = '';
-    if (acInput) acInput.value = '';
-    if (imgInput) imgInput.value = '';
+    // 3. Сохраняем в базу данных
+    const monsterData = {
+        name: name,
+        hp: { average: hpData.val },
+        ac: [acData.val],
+        type: "manual",
+        img: img,
+        description: "Добавлен вручную",
+        acNote: acData.note,
+        hpNote: hpData.note
+    };
+
+    await addMonsterToDB(monsterData);
+    
+    // Очистка полей
+    document.getElementById('monster-name').value = '';
+    document.getElementById('monster-hp').value = '';
+    document.getElementById('monster-ac').value = '';
 }
 
 function renderCombatList() {
@@ -454,6 +458,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
