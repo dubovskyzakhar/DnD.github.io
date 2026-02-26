@@ -227,14 +227,16 @@ function filterHeroes() {
     displayHeroes(filtered);
 }
 
-function addHeroToCombat(name, hp, img) {
+function addHeroToCombat(name, hp, img, ac = 10) {
     const unit = {
-        name: name || "Безымянный герой",
-        maxHp: parseInt(hp) || 10, // Если пусто, даем 10 HP
-        currentHp: parseInt(hp) || 10,
+        name: name,
+        maxHp: hp,
+        currentHp: hp,
+        ac: ac,
         init: 0,
-        img: img || 'https://i.imgur.com/83p7pId.png', // Заглушка, если нет фото
-        type: 'hero'
+        img: img,
+        type: 'hero',
+        mods: { shield: false, cover: null }
     };
     combatants.push(unit);
     saveData();
@@ -292,20 +294,20 @@ function displayHeroes(heroes) {
     heroes.forEach((item) => {
         const values = Object.values(item);
         const name = (item["Имя"] || values[0] || "Герой").replace(/'/g, "\\'");
-        const hp = parseInt(item["MaxHP"] || values[1]) || 0;
+        const hp = parseInt(item["MaxHP"] || values[1]) || 10;
         const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+        const ac = parseInt(item["КД"] || values[5]) || 10; // Берем из столбца F
 
         const div = document.createElement('div');
         div.className = 'library-item';
         div.innerHTML = `
-            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}')">
+            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}', ${ac})">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} ${hp > 0 ? `<small>(HP: ${hp})</small>` : ''}</span>
+                <span>${name} <small>(HP: ${hp}, AC: ${ac})</small></span>
             </div>
             <div class="lib-actions">
                 <label class="btn-lib-upload" title="Обновить фото">
-                    📷
-                    <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
+                    📷 <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
                 </label>
             </div>
         `;
@@ -423,6 +425,7 @@ async function updateUnitPhoto(event, index) {
 }
 
 // 6. ИМПОРТ ИЗ JSON
+// ИСПРАВЛЕННЫЙ ИМПОРТ ГЕРОЯ
 async function importCharacter() {
     const fileInput = document.getElementById('import-json');
     if (!fileInput.files[0]) return alert("Выбери файл JSON!");
@@ -431,18 +434,28 @@ async function importCharacter() {
         try {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
+            
             const name = (data.name?.value || data.name || "Герой").toString().trim();
             const hp = parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10;
             const img = data.avatar?.webp || data.avatar?.jpeg || "";
+            // Извлекаем КД (AC) из JSON, если он есть
+            const ac = parseInt(data.attributes?.ac?.value || data.ac) || 10;
 
-            const unit = { name, maxHp: hp, currentHp: hp, init: 0, img, type: 'hero' };
+            // Добавляем в локальный массив (для вкладки Бой)
+            const unit = { 
+                name, maxHp: hp, currentHp: hp, 
+                ac: ac, init: 0, img, type: 'hero' 
+            };
             combatants.push(unit);
-            saveData(); renderCombatList();
-            switchTab('battle');
+            saveData();
+            renderCombatList();
             
-            // Пытаемся сохранить в базу, если такого нет
-            await sendDataToSheets('Characters', 'add', [name, hp, hp, 0, img]);
-        } catch (err) { alert("Ошибка JSON!"); }
+            // ОТПРАВЛЯЕМ В ТАБЛИЦУ Characters
+            // Столбцы: A:Имя | B:MaxHP | C:CurrHP | D:Init | E:Фото | F:КД (AC)
+            await sendDataToSheets('Characters', 'add', [name, hp, hp, 0, img, ac]);
+            
+            switchTab('battle');
+        } catch (err) { alert("Ошибка JSON героя!"); }
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -474,6 +487,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
