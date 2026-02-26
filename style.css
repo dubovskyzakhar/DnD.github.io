@@ -96,17 +96,17 @@ body {
     background: #000;
 }
 
-/* Иконка Класса Защиты (AC) */
+/* Иконка Класса Защиты (AC) - Единый стиль для всех */
 .ac-badge {
     position: absolute;
-    bottom: -5px;
-    right: -5px;
-    width: 32px;
-    height: 38px;
+    bottom: -6px;    /* Чуть выше */
+    right: -10px;   /* Смещен сильнее вправо */
+    width: 28px;     /* Было 32px - стал меньше */
+    height: 34px;    /* Было 38px - стал меньше */
     background: linear-gradient(145deg, #3a3a3a, #222);
     color: var(--gold-bright);
     font-weight: 800;
-    font-size: 15px;
+    font-size: 13px; /* Шрифт тоже чуть меньше под размер щита */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -118,13 +118,18 @@ body {
     transition: 0.2s;
 }
 
+/* Убираем красный фон у монстров, делаем серым как у всех */
 .monster-card .ac-badge {
-    background: linear-gradient(145deg, #b00, #700);
-    color: white;
-    border-color: #ffaaaa;
+    background: linear-gradient(145deg, #3a3a3a, #222);
+    color: var(--gold-bright);
+    border-color: #555;
 }
 
-.ac-badge:hover { transform: scale(1.1); }
+/* Эффект при наведении */
+.ac-badge:hover { 
+    transform: scale(1.1); 
+    filter: brightness(1.2);
+}
 
 /* Кнопка загрузки фото на аватаре */
 .upload-badge {
@@ -247,3 +252,4 @@ body {
 .lib-info img { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; border: 1px solid var(--gold); }
 
 .lib-actions .btn-lib-upload { cursor: pointer; font-size: 1.2rem; }
+
