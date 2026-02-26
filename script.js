@@ -89,71 +89,82 @@ async function importCharacter() {
     reader.readAsText(fileInput.files[0]);
 }
 
+let selectedHeroData = null; // Переменная для хранения выбранного героя
+
+function toggleLibrary() {
+    document.getElementById('library-options').classList.toggle('active');
+}
+
+// Закрывать список, если кликнули мимо
+window.addEventListener('click', function(e) {
+    if (!document.getElementById('library-select-container').contains(e.target)) {
+        document.getElementById('library-options').classList.remove('active');
+    }
+});
+
 async function loadLibrary() {
-    const select = document.getElementById('db-character-select');
-    if (!select) return;
+    const optionsContainer = document.getElementById('library-options');
+    const selectedText = document.getElementById('selected-text');
+    if (!optionsContainer) return;
 
     try {
         const response = await fetch(`${API_URL}?sheet=Characters`);
         const data = await response.json();
         
-        console.log("Проверка данных из БД:", data[0]); // Посмотри в консоль F12, что там в первом объекте
-
-        select.innerHTML = '<option value="">-- Выберите героя --</option>';
+        optionsContainer.innerHTML = '';
         
         data.forEach((item) => {
-            // Превращаем объект в массив значений, чтобы достать данные по позиции
             const values = Object.values(item);
-            
-            // Имя обычно в 1-м столбце (индекс 0)
             const charName = item["Имя"] || item["name"] || values[0] || "Герой";
-            
-            // Фото в 5-м столбце (индекс 4)
-            // Мы проверяем ключ "Фото", "img" или берем 5-е значение из массива значений объекта
-            const charImg = item["Фото"] || item["img"] || item["avatar"] || values[4] || "";
+            const charImg = item["Фото"] || item["img"] || values[4] || "";
 
-            const opt = document.createElement('option');
-            
-            // Важно: сохраняем именно ту ссылку, которую ты скинул
-            const cleanData = {
-                name: charName,
-                maxHp: parseInt(item["MaxHP"] || values[1]) || 10,
-                img: charImg.trim() // Убираем лишние пробелы, если они есть
+            // Создаем элемент опции
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            div.innerHTML = `
+                <img src="${charImg}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                <span>${charName}</span>
+            `;
+
+            // Логика выбора
+            div.onclick = () => {
+                selectedHeroData = {
+                    name: charName,
+                    maxHp: parseInt(item["MaxHP"] || values[1]) || 10,
+                    img: charImg
+                };
+                selectedText.innerHTML = `<img src="${charImg}" style="width:25px;height:25px;border-radius:50%;margin-right:10px;vertical-align:middle;"> ${charName}`;
+                optionsContainer.classList.remove('active');
             };
 
-            opt.value = JSON.stringify(cleanData);
-            opt.textContent = `👤 ${charName}`;
-            select.appendChild(opt);
+            optionsContainer.appendChild(div);
         });
     } catch (e) {
-        console.error("Ошибка загрузки библиотеки:", e);
-        select.innerHTML = '<option>Ошибка связи с БД</option>';
+        optionsContainer.innerHTML = '<div class="option-item">Ошибка загрузки БД</div>';
     }
 }
 
 function addFromLibrary() {
-    const select = document.getElementById('db-character-select');
-    if (!select || !select.value) return alert("Сначала выберите героя!");
+    if (!selectedHeroData) return alert("Сначала выберите героя!");
 
-    try {
-        const data = JSON.parse(select.value);
-        
-        const newUnit = {
-            name: data.name,
-            maxHp: parseInt(data.maxHp) || 10,
-            currentHp: parseInt(data.maxHp) || 10,
-            init: Math.floor(Math.random() * 20) + 1, // Бросок инициативы
-            img: data.img || "",
-            type: 'hero'
-        };
+    const newUnit = {
+        name: selectedHeroData.name,
+        maxHp: selectedHeroData.maxHp,
+        currentHp: selectedHeroData.maxHp,
+        init: Math.floor(Math.random() * 20) + 1,
+        img: selectedHeroData.img,
+        type: 'hero'
+    };
 
-        combatants.push(newUnit);
-        saveData();
-        renderCombatList();
-        switchTab('battle');
-    } catch (err) {
-        alert("Ошибка при добавлении из библиотеки");
-    }
+    combatants.push(newUnit);
+    saveData();
+    renderCombatList();
+    
+    // Сброс выбора
+    selectedHeroData = null;
+    document.getElementById('selected-text').innerText = "-- Выберите героя --";
+    
+    switchTab('battle');
 }
 
 async function addMonsterByUrl() {
@@ -195,5 +206,6 @@ window.onload = () => {
         saveData();
     }});
 };
+
 
 
