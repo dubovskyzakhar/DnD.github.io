@@ -63,59 +63,31 @@ async function importCharacter() {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
             
-            // Получаем имя из JSON и чистим его
             const nameFromJSON = (data.name?.value || data.name || "Герой").toString().trim();
-
-            // 1. Загружаем текущую БД
             const resp = await fetch(`${API_URL}?sheet=Characters`);
             const db = await resp.json();
             
-            console.log("Сверяю имя:", nameFromJSON, "с базой данных:", db);
+            const exists = db.find(row => Object.values(row).some(v => v?.toString().trim().toLowerCase() === nameFromJSON.toLowerCase()));
 
-            // 2. Ультра-проверка: ищем совпадение имени в любой колонке, игнорируя регистр и пробелы
-            const exists = db.find(row => {
-                return Object.values(row).some(cellValue => {
-                    if (!cellValue) return false;
-                    return cellValue.toString().trim().toLowerCase() === nameFromJSON.toLowerCase();
-                });
-            });
-
-            // 3. Формируем объект персонажа
             const unit = {
                 name: nameFromJSON,
-                maxHp: exists ? 
-                    (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
-                    (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
-                currentHp: exists ? 
-                    (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
-                    (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
-                init: (Math.floor(Math.random() * 20) + 1) + (parseInt(data.stats?.dex?.modifier) || 0),
-                img: exists ? 
-                    (exists["Фото"] || exists["img"] || Object.values(exists)[4] || "") : 
-                    (data.avatar?.webp || data.avatar?.jpeg || ""),
+                maxHp: exists ? (parseInt(exists["MaxHP"] || Object.values(exists)[1]) || 10) : (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
+                currentHp: exists ? (parseInt(exists["MaxHP"] || Object.values(exists)[1]) || 10) : (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
+                init: 0, // Установлено в 0
+                img: exists ? (exists["Фото"] || Object.values(exists)[4] || "") : (data.avatar?.webp || data.avatar?.jpeg || ""),
                 type: 'hero'
             };
 
-            // 4. Логика добавления в БД
             if (!exists) {
-                console.log("✅ Совпадений не найдено. Отправляю в Google Sheets...");
                 await sendDataToSheets('Characters', 'add', [unit.name, unit.maxHp, unit.maxHp, unit.init, unit.img]);
-                // Небольшая задержка перед обновлением списка, чтобы Google успел сохранить
                 setTimeout(loadLibrary, 2000);
-            } else {
-                console.log("⛔ Персонаж найден в БД. В таблицу ничего не добавляю.");
             }
 
-            // 5. В любом случае добавляем в текущий бой
             combatants.push(unit);
             saveData(); 
             renderCombatList(); 
             switchTab('battle');
-
-        } catch (err) { 
-            console.error("Ошибка процесса:", err);
-            alert("Критическая ошибка при импорте!"); 
-        }
+        } catch (err) { console.error(err); alert("Ошибка JSON!"); }
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -182,7 +154,7 @@ function addFromLibrary() {
         name: selectedHeroData.name,
         maxHp: selectedHeroData.maxHp,
         currentHp: selectedHeroData.maxHp,
-        init: Math.floor(Math.random() * 20) + 1,
+        init: 0, // Установлено в 0
         img: selectedHeroData.img,
         type: 'hero'
     };
@@ -191,25 +163,41 @@ function addFromLibrary() {
     saveData();
     renderCombatList();
     
-    // Сброс выбора
     selectedHeroData = null;
     document.getElementById('selected-text').innerText = "-- Выберите героя --";
-    
     switchTab('battle');
 }
 
 async function addMonsterByUrl() {
     const urlInput = document.getElementById('monster-url');
+    if (!urlInput.value) return alert("Вставь ссылку!");
+    
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlInput.value)}`;
+    
     try {
         const resp = await fetch(proxyUrl);
         const d = await resp.json();
         const doc = new DOMParser().parseFromString(d.contents, 'text/html');
+        
         const name = doc.querySelector('h1')?.innerText || "Монстр";
-        const hp = parseInt(d.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i)?.[1] || 50);
-        combatants.push({ name, maxHp: hp, currentHp: hp, init: Math.floor(Math.random() * 20) + 1, img: "", type: 'monster' });
-        saveData(); renderCombatList(); urlInput.value = ""; switchTab('battle');
-    } catch (e) { alert("Ошибка!"); }
+        const hpMatch = d.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i);
+        const hp = hpMatch ? parseInt(hpMatch[1]) : 50;
+
+        const newMonster = { 
+            name, 
+            maxHp: hp, 
+            currentHp: hp, 
+            init: 0, // Установлено в 0
+            img: "", 
+            type: 'monster' 
+        };
+
+        combatants.push(newMonster);
+        saveData(); 
+        renderCombatList(); 
+        urlInput.value = ""; 
+        switchTab('battle');
+    } catch (e) { alert("Ошибка загрузки данных монстра!"); }
 }
 
 async function sendDataToSheets(sheet, action, data) {
@@ -270,3 +258,4 @@ window.onload = () => {
         }
     });
 };
+
