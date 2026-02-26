@@ -54,10 +54,19 @@
 </div>
 
                 <div class="config-card flex-1">
-                    <h3>Новый монстр (JSON)</h3>
-                    <input type="file" id="monster-json" accept=".json">
-                    <button onclick="addMonsterManual()">Загрузить и призвать</button>
-                </div>
+    <h3>Новый монстр (JSON или Вручную)</h3>
+    <input type="text" id="monster-name" placeholder="Имя (например: Ларва)">
+    <input type="text" id="monster-hp" placeholder="Хиты (например: 9)">
+    <input type="text" id="monster-ac" placeholder="КД (например: 9)">
+    <input type="text" id="monster-img" placeholder="Ссылка на фото">
+    
+    <div style="margin: 10px 0; border-top: 1px solid var(--gold); padding-top: 10px;">
+        <small>Или выберите файл:</small>
+        <input type="file" id="monster-json" accept=".json">
+    </div>
+    
+    <button onclick="addMonsterManual()">Призвать и сохранить в БД</button>
+</div>
             </div>
 
             <div class="config-row">
@@ -76,6 +85,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
