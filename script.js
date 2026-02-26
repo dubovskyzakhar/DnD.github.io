@@ -1,6 +1,11 @@
 let combatants = JSON.parse(localStorage.getItem('dnd_combatants')) || [];
 let fullMonsterDatabase = []; 
-let fullHeroDatabase = [];    
+let fullHeroDatabase = [];   
+const DND_STATUSES = [
+    "Бессознательный", "Испуган", "Истощен", "Невидимый", "Недееспособен", 
+    "Окаменевший", "Ослеплен", "Опутан", "Отравлен", "Очарован", 
+    "Оглушен", "Ошеломлен", "Парализован", "Сбит с ног", "Схвачен"
+];
 const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
 // 1. УПРАВЛЕНИЕ ВКЛАДКАМИ
@@ -12,6 +17,31 @@ function switchTab(tabId) {
         loadHeroLibrary();    
         loadMonsterLibrary(); 
     }
+}
+
+function toggleStatus(index, status) {
+    if (!combatants[index].statuses) combatants[index].statuses = [];
+    
+    const statusIndex = combatants[index].statuses.indexOf(status);
+    if (statusIndex > -1) {
+        combatants[index].statuses.splice(statusIndex, 1);
+    } else {
+        combatants[index].statuses.push(status);
+    }
+    saveData();
+    renderCombatList();
+}
+
+function toggleStatusMenu(index) {
+    const menu = document.getElementById(`status-menu-${index}`);
+    const allMenus = document.querySelectorAll('.status-dropdown');
+    
+    // Закрываем другие открытые меню
+    allMenus.forEach(m => {
+        if (m !== menu) m.style.display = 'none';
+    });
+
+    menu.style.display = menu.style.display === 'grid' ? 'none' : 'grid';
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -152,44 +182,65 @@ function renderCombatList() {
     list.innerHTML = '';
     
     combatants.forEach((unit, index) => {
+        // Инициализация модов и статусов, если их нет
         if (!unit.mods) unit.mods = { shield: false, cover: null };
-        let bonus = (unit.mods.shield ? 2 : 0) + (unit.mods.cover === '1/2' ? 2 : 0) + (unit.mods.cover === '3/4' ? 5 : 0);
+        if (!unit.statuses) unit.statuses = [];
+
+        // Расчет итогового КД
+        let bonus = (unit.mods.shield ? 2 : 0) + 
+                    (unit.mods.cover === '1/2' ? 2 : 0) + 
+                    (unit.mods.cover === '3/4' ? 5 : 0);
         const totalAC = (parseInt(unit.ac) || 0) + bonus;
 
         const div = document.createElement('div');
-        // Добавляем класс selected, если нужно (сохраняем выбор при перерисовке)
+        // Класс selected для золотой рамки
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
         div.id = `unit-${index}`;
         
-        // Клик по карточке зажигает золотую рамку
+        // Клик по карточке — выбор юнита (золотая рамка)
         div.onclick = (e) => {
-            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.classList.contains('status-tag')) {
                 selectUnit(index);
             }
         };
 
+        // Генерация тегов статусов
+        const statusIcons = unit.statuses.map(s => 
+            `<span class="status-tag" onclick="event.stopPropagation(); toggleStatus(${index}, '${s}')">${s} <small>×</small></span>`
+        ).join('');
+
         div.innerHTML = `
             <div class="avatar-container">
                 <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
-                <div class="ac-badge" onclick="editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
+                <div class="ac-badge" onclick="event.stopPropagation(); editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
                     ${totalAC}
                     ${(unit.acNote && (unit.acNote.includes('мастерства') || unit.acNote.includes('БМ'))) ? '<span class="pb-label">БМ</span>' : ''}
                 </div>
             </div>
 
             <div class="unit-info">
-                <strong>${unit.name}</strong>
-                <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
+                <div class="name-row">
+                    <strong>${unit.name}</strong>
+                    <span class="init-value" onclick="event.stopPropagation(); editInit(${index})" title="Инициатива">${unit.init}</span>
+                </div>
+                
+                <div class="status-container">
+                    <div class="active-statuses">${statusIcons}</div>
+                    <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ статус</button>
+                    <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()">
+                        ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
+                    </div>
+                </div>
             </div>
 
             <div class="right-controls-group">
                 <div class="mod-buttons">
-                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, 'shield')">🛡️</button>
-                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '1/2')">½</button>
-                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '3/4')">¾</button>
+                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, 'shield')" title="Щит (+2 КД)">🛡️</button>
+                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '1/2')" title="Укрытие 1/2 (+2 КД)">½</button>
+                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '3/4')" title="Укрытие 3/4 (+5 КД)">¾</button>
                 </div>
 
-                <div class="hp-heart-container" onclick="event.stopPropagation(); editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || ''}">
+                <div class="hp-heart-container" onclick="event.stopPropagation(); editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
                     <svg viewBox="0 0 32 32" class="hp-heart-svg">
                         <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
                     </svg>
@@ -200,8 +251,10 @@ function renderCombatList() {
                     </div>
                 </div>
                 
-                <button class="clone-btn" onclick="event.stopPropagation(); cloneUnit(${index})">👯</button>
-                <button class="delete-btn" onclick="event.stopPropagation(); deleteUnit(${index})">🗑️</button>
+                <div class="action-buttons">
+                    <button class="clone-btn" onclick="event.stopPropagation(); cloneUnit(${index})" title="Клонировать юнита">👯</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteUnit(${index})" title="Удалить из боя">🗑️</button>
+                </div>
             </div>
         `;
         list.appendChild(div);
@@ -544,6 +597,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
