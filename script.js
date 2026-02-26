@@ -63,24 +63,26 @@ async function importCharacter() {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
             
-            // Получаем имя из JSON
-            const name = (data.name?.value || data.name || "Герой").trim();
+            // Получаем имя из JSON и чистим его
+            const nameFromJSON = (data.name?.value || data.name || "Герой").toString().trim();
 
-            // 1. Загружаем текущую БД для проверки на дубликаты
+            // 1. Загружаем текущую БД
             const resp = await fetch(`${API_URL}?sheet=Characters`);
             const db = await resp.json();
             
-            // 2. Умный поиск дубликата по имени во всех полях БД
-            const exists = db.find(row => 
-                Object.values(row).some(val => 
-                    String(val).toLowerCase() === name.toLowerCase()
-                )
-            );
+            console.log("Сверяю имя:", nameFromJSON, "с базой данных:", db);
 
-            // 3. Формируем объект для списка боя
+            // 2. Ультра-проверка: ищем совпадение имени в любой колонке, игнорируя регистр и пробелы
+            const exists = db.find(row => {
+                return Object.values(row).some(cellValue => {
+                    if (!cellValue) return false;
+                    return cellValue.toString().trim().toLowerCase() === nameFromJSON.toLowerCase();
+                });
+            });
+
+            // 3. Формируем объект персонажа
             const unit = {
-                name: name,
-                // Если в БД есть, берем HP оттуда, иначе из JSON
+                name: nameFromJSON,
                 maxHp: exists ? 
                     (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
                     (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
@@ -88,32 +90,31 @@ async function importCharacter() {
                     (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
                     (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
                 init: (Math.floor(Math.random() * 20) + 1) + (parseInt(data.stats?.dex?.modifier) || 0),
-                // Если в БД есть фото, берем его, иначе из JSON
                 img: exists ? 
                     (exists["Фото"] || exists["img"] || Object.values(exists)[4] || "") : 
                     (data.avatar?.webp || data.avatar?.jpeg || ""),
                 type: 'hero'
             };
 
-            // 4. ОТПРАВКА В БД: Только если персонаж НЕ найден
+            // 4. Логика добавления в БД
             if (!exists) {
-                console.log(`Персонаж "${name}" не найден в БД. Добавляю новую запись...`);
+                console.log("✅ Совпадений не найдено. Отправляю в Google Sheets...");
                 await sendDataToSheets('Characters', 'add', [unit.name, unit.maxHp, unit.maxHp, unit.init, unit.img]);
-                // Обновляем список в библиотеке, так как добавился новый герой
-                setTimeout(loadLibrary, 1500); 
+                // Небольшая задержка перед обновлением списка, чтобы Google успел сохранить
+                setTimeout(loadLibrary, 2000);
             } else {
-                console.log(`Персонаж "${name}" уже есть в БД. Пропускаю шаг записи.`);
+                console.log("⛔ Персонаж найден в БД. В таблицу ничего не добавляю.");
             }
 
-            // 5. Добавляем на поле боя в любом случае
+            // 5. В любом случае добавляем в текущий бой
             combatants.push(unit);
             saveData(); 
             renderCombatList(); 
             switchTab('battle');
 
         } catch (err) { 
-            console.error("Ошибка импорта:", err);
-            alert("Ошибка при чтении JSON!"); 
+            console.error("Ошибка процесса:", err);
+            alert("Критическая ошибка при импорте!"); 
         }
     };
     reader.readAsText(fileInput.files[0]);
@@ -236,6 +237,7 @@ window.onload = () => {
         saveData();
     }});
 };
+
 
 
 
