@@ -14,32 +14,6 @@ function switchTab(tabId) {
     }
 }
 
-// Функция отправки данных о монстре в Google Таблицу
-async function addMonsterToDB(monsterData) {
-    const sheetName = 'Enemies';
-    
-    // Формируем строку строго по твоему порядку (8 столбцов)
-    const rowData = [
-        monsterData.name,               // 1. Название монстров
-        monsterData.hp?.average || "10", // 2. Число хитов
-        monsterData.ac?.[0] || "10",     // 3. Класс доспеха
-        monsterData.type || "manual",    // 4. Тип
-        monsterData.img || "",           // 5. Фото
-        monsterData.description || "",   // 6. Описание (можно оставить пустым)
-        monsterData.acNote || "",        // 7. Доп класс защиты
-        monsterData.hpNote || ""         // 8. Доп хиты
-    ];
-    
-    console.log("Отправка в БД (порядок столбцов соблюден):", rowData);
-
-    // Отправка через fetch
-    if (typeof sendDataToSheets === "function") {
-        await sendDataToSheets(sheetName, 'add', rowData);
-    } else {
-        console.error("Ошибка: Функция sendDataToSheets не найдена!");
-    }
-}
-
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
 // Функция переключения модификаторов
 function toggleMod(index, modType) {
@@ -86,44 +60,83 @@ function changeBackground(event) {
 }
 
 async function addMonsterManual() {
-    const name = document.getElementById('monster-name')?.value || "Новый монстр";
-    const hpRaw = document.getElementById('monster-hp')?.value || "10";
-    const acRaw = document.getElementById('monster-ac')?.value || "10";
-    const img = document.getElementById('monster-img')?.value || 'https://i.imgur.com/83p7pId.png';
-
-    // 1. Добавляем в список боя (на экран)
-    addMonsterToCombat(name, hpRaw, acRaw, img);
-
-    // 2. Парсим данные для базы (отделяем числа от заметок в скобках)
-    const parseValue = (str) => {
-        const s = str.toString();
-        const match = s.match(/^(\d+)/);
-        const val = match ? match[1] : "0";
-        let note = s.replace(/^\d+/, "").replace(/[()]/g, "").trim();
-        return { val, note };
-    };
-
-    const hpData = parseValue(hpRaw);
-    const acData = parseValue(acRaw);
-
-    // 3. Сохраняем в базу данных
-    const monsterData = {
-        name: name,
-        hp: { average: hpData.val },
-        ac: [acData.val],
-        type: "manual",
-        img: img,
-        description: "Добавлен вручную",
-        acNote: acData.note,
-        hpNote: hpData.note
-    };
-
-    await addMonsterToDB(monsterData);
+    const fileInput = document.getElementById('monster-json');
     
-    // Очистка полей
-    document.getElementById('monster-name').value = '';
-    document.getElementById('monster-hp').value = '';
-    document.getElementById('monster-ac').value = '';
+    // Если выбран файл JSON
+    if (fileInput && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const monsterData = JSON.parse(e.target.result);
+                
+                // 1. Извлекаем имя
+                const name = monsterData.name || "Новый монстр";
+                
+                // 2. Извлекаем HP (учитываем average и formula для заметок)
+                const hpAvg = monsterData.hp?.average || 10;
+                const hpFormula = monsterData.hp?.formula || "";
+                
+                // 3. Извлекаем AC (обрабатываем и число, и объект)
+                let acVal = 10;
+                let acNote = "";
+                if (Array.isArray(monsterData.ac)) {
+                    const firstAC = monsterData.ac[0];
+                    if (typeof firstAC === 'object') {
+                        acVal = firstAC.ac;
+                        acNote = firstAC.from ? firstAC.from.join(", ") : "";
+                    } else {
+                        acVal = firstAC;
+                    }
+                }
+
+                // 4. Подготавливаем данные для БД (8 столбцов)
+                const dbData = {
+                    name: name,
+                    hp: hpAvg,
+                    ac: acVal,
+                    type: monsterData.type || "unknown",
+                    img: monsterData.img || "",
+                    description: monsterData.trait ? monsterData.trait[0].name : "",
+                    acNote: acNote,
+                    hpNote: hpFormula
+                };
+
+                // Отправляем в список боя (визуально)
+                addMonsterToCombat(name, `${hpAvg} (${hpFormula})`, `${acVal} ${acNote}`, dbData.img);
+                
+                // Отправляем в Google Sheets
+                await addMonsterToDB(dbData);
+                
+                alert(`Монстр ${name} добавлен!`);
+                fileInput.value = ''; // Сброс файла
+            } catch (err) {
+                console.error(err);
+                alert("Ошибка при чтении JSON файла!");
+            }
+        };
+        reader.readAsText(fileInput.files[0]);
+    } else {
+        alert("Пожалуйста, выберите JSON файл.");
+    }
+}
+
+async function addMonsterToDB(monsterData) {
+    const sheetName = 'Enemies';
+    
+    // Твой строгий порядок столбцов:
+    // 1. Название | 2. Хиты | 3. КД | 4. Тип | 5. Фото | 6. Описание | 7. Доп КД | 8. Доп хиты
+    const rowData = [
+        monsterData.name,        // Название монстров
+        monsterData.hp,          // Число хитов
+        monsterData.ac,          // Класс доспеха
+        monsterData.type,        // Тип
+        monsterData.img,         // Фото
+        monsterData.description, // Описание
+        monsterData.acNote,      // Доп класс защиты
+        monsterData.hpNote       // Доп хиты (формула)
+    ];
+    
+    await sendDataToSheets(sheetName, 'add', rowData);
 }
 
 function renderCombatList() {
@@ -458,6 +471,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
