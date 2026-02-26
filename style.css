@@ -264,5 +264,31 @@ body {
     color: black;
 }
 
+.library-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--gold);
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+}
+
+.library-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #444;
+    transition: 0.2s;
+}
+
+.library-item:hover { background: rgba(255,215,0,0.1); }
+
+.lib-info { display: flex; align-items: center; cursor: pointer; flex-grow: 1; }
+.lib-info img { width: 35px; height: 35px; border-radius: 50%; margin-right: 10px; object-fit: cover; }
+
+.lib-actions { display: flex; gap: 10px; }
+.btn-lib-upload { cursor: pointer; font-size: 1.2rem; filter: grayscale(1); transition: 0.3s; }
+.btn-lib-upload:hover { filter: grayscale(0); }
+
 
 
