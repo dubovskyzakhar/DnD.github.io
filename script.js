@@ -590,6 +590,32 @@ function cloneUnit(index) {
     renderCombatList();
 }
 
+// 1. ПОЛНАЯ ОЧИСТКА (Все карточки)
+function clearAllCombatants() {
+    if (confirm("Вы уверены, что хотите полностью очистить поле боя?")) {
+        combatants = []; // Обнуляем массив
+        saveData();      // Сохраняем пустоту в LocalStorage
+        renderCombatList(); // Перерисовываем
+    }
+}
+
+// 2. ЗАВЕРШИТЬ БОЙ (Удалить только монстров)
+function finishBattle() {
+    if (confirm("Удалить всех противников? Герои останутся.")) {
+        // Оставляем в массиве только тех, у кого тип 'hero'
+        combatants = combatants.filter(unit => unit.type === 'hero');
+        
+        // Сбрасываем статусы и щиты у оставшихся героев (по желанию)
+        combatants.forEach(hero => {
+            hero.mods = { shield: false, cover: null };
+            hero.statuses = [];
+        });
+
+        saveData();
+        renderCombatList();
+    }
+}
+
 // 7. ЗАПУСК
 window.onload = () => {
     const bg = localStorage.getItem('dnd_bg');
@@ -624,6 +650,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
