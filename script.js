@@ -176,17 +176,22 @@ async function importMonster() {
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
-            // Обработка структуры твоего JSON (берем среднее HP и AC)
             const name = (raw.name || "Монстр").toString().trim();
             const hp = parseInt(raw.hp?.average || 10);
             const ac = parseInt(raw.ac?.[0] || 10);
             const type = raw.type || "unknown";
             
-            // Пытаемся достать картинку, если она есть в JSON (hasToken)
-            // Обычно путь формируется на основе названия или source
-            const img = `https://ttg.club/img/tokens/${raw.source}/${name.split('[')[0].trim()}.png`;
+            // --- НОВАЯ ЛОГИКА ДЛЯ КАРТИНКИ ---
+            // Извлекаем "Halaster Puppet" из скобок [Halaster Puppet]
+            const englishNameMatch = name.match(/\[(.*?)\]/);
+            const cleanName = englishNameMatch ? englishNameMatch[1] : name;
+            
+            // Формируем ссылку: заменяем пробелы на подчеркивания и переводим в нужный регистр
+            // Пример: https://ttg.club/img/tokens/WDMM/Halaster_Puppet.png
+            const formattedName = cleanName.replace(/\s+/g, '_');
+            const imgUrl = `https://ttg.club/img/tokens/${raw.source}/${formattedName}.png`;
+            // ---------------------------------
 
-            // 1. Проверяем дубликат во вкладке Enemies
             const resp = await fetch(`${API_URL}?sheet=Enemies`);
             const db = await resp.json();
             const exists = db.find(row => Object.values(row).some(v => v?.toString().trim().toLowerCase() === name.toLowerCase()));
@@ -196,15 +201,14 @@ async function importMonster() {
                 maxHp: hp,
                 currentHp: hp,
                 ac: ac,
-                init: 0, // Инициатива всегда 0 при добавлении
-                img: img,
+                init: 0,
+                img: imgUrl, 
                 type: 'monster',
                 description: raw.trait?.[0]?.name || ""
             };
 
-            // 2. Если такого монстра нет в БД Enemies - добавляем
             if (!exists) {
-                console.log("Новый монстр! Добавляю в таблицу Enemies...");
+                console.log("Добавляю нового монстра в Enemies...");
                 await sendDataToSheets('Enemies', 'add', [
                     newMonster.name, 
                     newMonster.maxHp, 
@@ -215,7 +219,6 @@ async function importMonster() {
                 ]);
             }
 
-            // 3. Добавляем в бой
             combatants.push(newMonster);
             saveData();
             renderCombatList();
@@ -223,7 +226,7 @@ async function importMonster() {
 
         } catch (err) {
             console.error(err);
-            alert("Ошибка чтения JSON монстра!");
+            alert("Ошибка чтения JSON!");
         }
     };
     reader.readAsText(fileInput.files[0]);
@@ -316,6 +319,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
