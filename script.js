@@ -176,39 +176,45 @@ async function importMonster() {
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
+            
+            // 1. Извлекаем данные из JSON
             const name = (raw.name || "Монстр").toString().trim();
-            const hp = parseInt(raw.hp?.average || 10);
-            const ac = parseInt(raw.ac?.[0] || 10);
+            const hp = parseInt(raw.hp?.average || 10); // Хиты
+            const ac = parseInt(raw.ac?.[0] || 10);     // КД (Класс Доспеха)
             const type = raw.type || "unknown";
             
-            // --- НОВАЯ ЛОГИКА ДЛЯ КАРТИНКИ ---
-            // Извлекаем "Halaster Puppet" из скобок [Halaster Puppet]
+            // 2. Логика формирования ссылки на фото (как в твоих примерах)
+            // Ищем английское имя в скобках, например [Halaster Puppet]
             const englishNameMatch = name.match(/\[(.*?)\]/);
             const cleanName = englishNameMatch ? englishNameMatch[1] : name;
             
-            // Формируем ссылку: заменяем пробелы на подчеркивания и переводим в нужный регистр
-            // Пример: https://ttg.club/img/tokens/WDMM/Halaster_Puppet.png
-            const formattedName = cleanName.replace(/\s+/g, '_');
-            const imgUrl = `https://ttg.club/img/tokens/${raw.source}/${formattedName}.png`;
-            // ---------------------------------
+            // Переводим в нижний регистр и заменяем пробелы на подчеркивания
+            // Было: "Halaster Puppet" -> Стало: "halaster_puppet"
+            const formattedName = cleanName.toLowerCase().trim().replace(/\s+/g, '_');
+            
+            // Собираем ссылку на сервер img.ttg.club в формате webp
+            const imgUrl = `https://img.ttg.club/tokens/round/${formattedName}.webp`;
 
+            // 3. Проверяем, есть ли уже такой монстр в таблице Enemies
             const resp = await fetch(`${API_URL}?sheet=Enemies`);
             const db = await resp.json();
             const exists = db.find(row => Object.values(row).some(v => v?.toString().trim().toLowerCase() === name.toLowerCase()));
 
+            // 4. Создаем объект юнита для боя
             const newMonster = {
                 name: name,
                 maxHp: hp,
                 currentHp: hp,
                 ac: ac,
-                init: 0,
+                init: 0, // Всегда 0 при добавлении
                 img: imgUrl, 
                 type: 'monster',
-                description: raw.trait?.[0]?.name || ""
+                description: raw.trait?.[0]?.name || "" // Первая способность
             };
 
+            // 5. Если монстра нет в базе Enemies — сохраняем его туда
             if (!exists) {
-                console.log("Добавляю нового монстра в Enemies...");
+                console.log("Новый монстр! Добавляю в таблицу Enemies...");
                 await sendDataToSheets('Enemies', 'add', [
                     newMonster.name, 
                     newMonster.maxHp, 
@@ -219,14 +225,18 @@ async function importMonster() {
                 ]);
             }
 
+            // 6. Добавляем в локальный список бойцов и перерисовываем
             combatants.push(newMonster);
             saveData();
             renderCombatList();
+            
+            // Очищаем поле выбора и переходим на вкладку боя
+            fileInput.value = "";
             switchTab('battle');
 
         } catch (err) {
-            console.error(err);
-            alert("Ошибка чтения JSON!");
+            console.error("Ошибка парсинга JSON:", err);
+            alert("Ошибка чтения JSON! Проверь формат файла.");
         }
     };
     reader.readAsText(fileInput.files[0]);
@@ -242,8 +252,15 @@ function renderCombatList() {
         const div = document.createElement('div');
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
         div.innerHTML = `
-            <div style="position: relative;">
-                <img src="${unit.img || ''}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+            <div style="position: relative;" class="avatar-container">
+                <img src="${unit.img || ''}" class="avatar" id="avatar-${index}" 
+                     onerror="this.src='https://i.imgur.com/83p7pId.png';">
+                
+                <label class="upload-badge" title="Загрузить фото">
+                    📷
+                    <input type="file" accept="image/*" style="display:none" onchange="updateUnitPhoto(event, ${index})">
+                </label>
+
                 ${unit.ac ? `<div class="ac-badge">${unit.ac}</div>` : ''}
             </div>
             <div>
@@ -274,6 +291,24 @@ function changeBackground(event) {
         localStorage.setItem('dnd_bg', reader.result);
     };
     reader.readAsDataURL(event.target.files[0]);
+}
+
+function updateUnitPhoto(event, index) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Image = e.target.result;
+        
+        // Обновляем фото в массиве текущего боя
+        combatants[index].img = base64Image;
+        
+        // Сохраняем изменения
+        saveData();
+        renderCombatList();
+    };
+    reader.readAsDataURL(file);
 }
 
 window.onload = () => {
@@ -319,6 +354,7 @@ window.onload = () => {
         }
     });
 };
+
 
 
 
