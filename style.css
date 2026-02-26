@@ -235,23 +235,41 @@ body {
     font-size: 1.1rem;
 }
 
-/* Иконка щита с AC */
+/* Иконка основного щита AC поверх аватара */
 .ac-badge {
-    background: #4a3b2a;
-    color: var(--gold);
-    border: 1px solid var(--gold);
-    border-radius: 50%;
-    width: 25px;
-    height: 25px;
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 38px;
+    height: 42px;
+    background: linear-gradient(145deg, #3a3a3a, #222);
+    color: #f1c40f; /* Золотой цвет для цифр */
+    font-weight: 800;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    position: absolute;
-    top: -5px;
-    left: 45px;
-    z-index: 2;
-    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    
+    /* Форма классического геральдического щита */
+    clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 50% 100%, 0% 70%);
+    border: 2px solid #555;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    text-shadow: 1px 1px 2px black;
+    transition: transform 0.2s;
+}
+
+.ac-badge:hover {
+    transform: scale(1.1);
+    color: #fff;
+}
+
+/* Контейнер аватара для позиционирования */
+.avatar-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
 }
 
 .monster-card .ac-badge {
@@ -415,6 +433,7 @@ body {
     cursor: pointer;
     z-index: 10;
 }
+
 
 
 
