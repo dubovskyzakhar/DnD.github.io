@@ -55,36 +55,66 @@ function deleteUnit(index) {
 
 async function importCharacter() {
     const fileInput = document.getElementById('import-json');
-    if (!fileInput.files[0]) return;
+    if (!fileInput.files[0]) return alert("Выбери файл JSON!");
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
-            const name = data.name?.value || data.name || "Герой";
+            
+            // Получаем имя из JSON
+            const name = (data.name?.value || data.name || "Герой").trim();
 
-            // ПРОВЕРКА БД (Столбец A)
+            // 1. Загружаем текущую БД для проверки на дубликаты
             const resp = await fetch(`${API_URL}?sheet=Characters`);
             const db = await resp.json();
-            const exists = db.find(r => (r["Имя"] || r["name"] || r[0]) === name);
+            
+            // 2. Умный поиск дубликата по имени во всех полях БД
+            const exists = db.find(row => 
+                Object.values(row).some(val => 
+                    String(val).toLowerCase() === name.toLowerCase()
+                )
+            );
 
+            // 3. Формируем объект для списка боя
             const unit = {
                 name: name,
-                maxHp: exists ? (exists["MaxHP"] || 10) : (data.vitality?.["hp-max"]?.value || 10),
-                currentHp: exists ? (exists["MaxHP"] || 10) : (data.vitality?.["hp-max"]?.value || 10),
-                init: (Math.floor(Math.random() * 20) + 1) + (data.stats?.dex?.modifier || 0),
-                img: exists ? (exists["Фото"] || "") : (data.avatar?.webp || ""),
+                // Если в БД есть, берем HP оттуда, иначе из JSON
+                maxHp: exists ? 
+                    (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
+                    (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
+                currentHp: exists ? 
+                    (parseInt(exists["MaxHP"] || exists["maxhp"] || Object.values(exists)[1]) || 10) : 
+                    (parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10),
+                init: (Math.floor(Math.random() * 20) + 1) + (parseInt(data.stats?.dex?.modifier) || 0),
+                // Если в БД есть фото, берем его, иначе из JSON
+                img: exists ? 
+                    (exists["Фото"] || exists["img"] || Object.values(exists)[4] || "") : 
+                    (data.avatar?.webp || data.avatar?.jpeg || ""),
                 type: 'hero'
             };
 
+            // 4. ОТПРАВКА В БД: Только если персонаж НЕ найден
             if (!exists) {
+                console.log(`Персонаж "${name}" не найден в БД. Добавляю новую запись...`);
                 await sendDataToSheets('Characters', 'add', [unit.name, unit.maxHp, unit.maxHp, unit.init, unit.img]);
+                // Обновляем список в библиотеке, так как добавился новый герой
+                setTimeout(loadLibrary, 1500); 
+            } else {
+                console.log(`Персонаж "${name}" уже есть в БД. Пропускаю шаг записи.`);
             }
 
+            // 5. Добавляем на поле боя в любом случае
             combatants.push(unit);
-            saveData(); renderCombatList(); switchTab('battle');
-        } catch (err) { alert("Ошибка JSON!"); }
+            saveData(); 
+            renderCombatList(); 
+            switchTab('battle');
+
+        } catch (err) { 
+            console.error("Ошибка импорта:", err);
+            alert("Ошибка при чтении JSON!"); 
+        }
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -206,6 +236,7 @@ window.onload = () => {
         saveData();
     }});
 };
+
 
 
 
