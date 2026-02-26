@@ -46,6 +46,33 @@ function editBaseAC(index) {
     }
 }
 
+function addMonsterManual() {
+    // Получаем данные из полей ввода (убедись, что ID совпадают с твоим HTML)
+    const nameInput = document.getElementById('monster-name');
+    const hpInput = document.getElementById('monster-hp');
+    const acInput = document.getElementById('monster-ac');
+    const imgInput = document.getElementById('monster-img');
+
+    // Если поля пустые, даем значения по умолчанию
+    const name = nameInput ? nameInput.value : "Новый монстр";
+    const hp = hpInput ? hpInput.value : "10";
+    const ac = acInput ? acInput.value : "10";
+    const img = (imgInput && imgInput.value) ? imgInput.value : 'https://i.imgur.com/83p7pId.png';
+
+    // Вызываем нашу "умную" функцию добавления с парсером текста
+    if (typeof addMonsterToCombat === "function") {
+        addMonsterToCombat(name, hp, ac, img);
+    } else {
+        console.error("Ошибка: Функция addMonsterToCombat не найдена!");
+    }
+
+    // Очищаем поля после добавления
+    if (nameInput) nameInput.value = '';
+    if (hpInput) hpInput.value = '';
+    if (acInput) acInput.value = '';
+    if (imgInput) imgInput.value = '';
+}
+
 function renderCombatList() {
     const list = document.getElementById('character-list');
     if (!list) return;
@@ -377,6 +404,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
