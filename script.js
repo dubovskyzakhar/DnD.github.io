@@ -153,14 +153,21 @@ function renderCombatList() {
     
     combatants.forEach((unit, index) => {
         if (!unit.mods) unit.mods = { shield: false, cover: null };
-        
-        // Расчет итогового КД (AC)
         let bonus = (unit.mods.shield ? 2 : 0) + (unit.mods.cover === '1/2' ? 2 : 0) + (unit.mods.cover === '3/4' ? 5 : 0);
         const totalAC = (parseInt(unit.ac) || 0) + bonus;
 
         const div = document.createElement('div');
+        // Добавляем класс selected, если нужно (сохраняем выбор при перерисовке)
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
+        div.id = `unit-${index}`;
         
+        // Клик по карточке зажигает золотую рамку
+        div.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                selectUnit(index);
+            }
+        };
+
         div.innerHTML = `
             <div class="avatar-container">
                 <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
@@ -172,21 +179,17 @@ function renderCombatList() {
 
             <div class="unit-info">
                 <strong>${unit.name}</strong>
-                <span class="init-value" onclick="editInit(${index})" title="Инициатива">${unit.init}</span>
-                ${unit.acNote ? `<div class="unit-note ac-note">${unit.acNote}</div>` : ''}
+                <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
             </div>
 
             <div class="right-controls-group">
                 <div class="mod-buttons">
-                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" 
-                            onclick="toggleMod(${index}, 'shield')" title="Щит +2">🛡️</button>
-                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" 
-                            onclick="toggleMod(${index}, '1/2')" title="Укрытие 1/2 (+2 КД)">½</button>
-                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" 
-                            onclick="toggleMod(${index}, '3/4')" title="Укрытие 3/4 (+5 КД)">¾</button>
+                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, 'shield')">🛡️</button>
+                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '1/2')">½</button>
+                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '3/4')">¾</button>
                 </div>
 
-                <div class="hp-heart-container" onclick="editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
+                <div class="hp-heart-container" onclick="event.stopPropagation(); editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || ''}">
                     <svg viewBox="0 0 32 32" class="hp-heart-svg">
                         <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
                     </svg>
@@ -195,10 +198,10 @@ function renderCombatList() {
                         <span class="hp-divider-slash">/</span>
                         <span class="hp-max">${unit.maxHp}</span>
                     </div>
-                    ${unit.hpNote ? `<div class="unit-note hp-note" style="position:absolute; bottom:-15px; right:0;">${unit.hpNote}</div>` : ''}
                 </div>
                 
-                <button class="delete-btn" onclick="deleteUnit(${index})" title="Удалить">🗑️</button>
+                <button class="clone-btn" onclick="event.stopPropagation(); cloneUnit(${index})">👯</button>
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteUnit(${index})">🗑️</button>
             </div>
         `;
         list.appendChild(div);
@@ -460,6 +463,60 @@ async function importCharacter() {
     reader.readAsText(fileInput.files[0]);
 }
 
+// 1. Золотая рамка
+function selectUnit(index) {
+    document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
+    const target = document.getElementById(`unit-${index}`);
+    if (target) target.classList.add('selected');
+}
+
+// 2. Быстрое добавление (кнопка +)
+function quickAddUnit() {
+    const name = prompt("Имя юнита:");
+    if (!name) return;
+    
+    const hp = parseInt(prompt("Максимальное HP:", "10")) || 10;
+    const ac = parseInt(prompt("Класс доспеха (AC):", "10")) || 10;
+    const isMonster = confirm("Это монстр? (ОК - Монстр, Отмена - Герой)");
+    
+    const newUnit = {
+        name: name,
+        maxHp: hp,
+        currentHp: hp,
+        ac: ac,
+        init: 0,
+        img: 'https://i.imgur.com/83p7pId.png',
+        type: isMonster ? 'monster' : 'hero',
+        mods: { shield: false, cover: null }
+    };
+
+    combatants.push(newUnit);
+    saveData();
+    renderCombatList();
+}
+
+// 3. Клонирование
+function cloneUnit(index) {
+    const unit = combatants[index];
+    const count = prompt(`Сколько клонов "${unit.name}" создать?`, "1");
+    if (!count || isNaN(count)) return;
+
+    for (let i = 0; i < parseInt(count); i++) {
+        const baseName = unit.name.replace(/_\d+$/, "");
+        // Считаем сколько уже есть таких имен в бою
+        const existingCount = combatants.filter(c => c.name.startsWith(baseName)).length;
+        
+        const clone = JSON.parse(JSON.stringify(unit));
+        clone.name = `${baseName}_${existingCount + 1}`;
+        clone.currentHp = clone.maxHp; 
+        clone.mods = { shield: false, cover: null };
+        
+        combatants.push(clone);
+    }
+    saveData();
+    renderCombatList();
+}
+
 // 7. ЗАПУСК
 window.onload = () => {
     const bg = localStorage.getItem('dnd_bg');
@@ -487,6 +544,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
