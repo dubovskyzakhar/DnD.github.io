@@ -333,4 +333,73 @@ body {
 }
 .character-card:hover .clone-btn { opacity: 1; }
 
+/* Контейнер статусов */
+.status-container {
+    margin-top: 5px;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Метки активных статусов */
+.status-tag {
+    background: #4a3b2a;
+    color: var(--gold-bright);
+    border: 1px solid var(--gold);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.2s;
+}
+
+.status-tag:hover {
+    background: #c0392b;
+    color: white;
+}
+
+/* Кнопка открытия меню */
+.add-status-btn {
+    background: transparent;
+    border: 1px dashed var(--gold);
+    color: var(--gold);
+    font-size: 10px;
+    padding: 1px 5px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* Всплывающее меню (Сетка) */
+.status-dropdown {
+    display: none;
+    position: absolute;
+    top: 25px;
+    left: 0;
+    z-index: 1000;
+    background: #2c1e14;
+    border: 2px solid var(--gold);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 5px;
+    box-shadow: 5px 5px 15px black;
+    width: 250px;
+}
+
+.status-option {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--paper);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(197,160,89,0.1);
+}
+
+.status-option:hover {
+    background: var(--gold);
+    color: #2c1e14;
+}
+
+
 
