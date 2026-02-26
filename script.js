@@ -18,7 +18,13 @@ function renderCharacters() {
         div.innerHTML = `
             <img src="${char.img || ''}" class="avatar">
             <div><strong>${char.name}</strong><br>Инициатива: ${char.init}</div>
-            <div class="hp-box">HP: <span class="hp-value" onwheel="changeHP(event, 'char', ${index})">${char.currentHp}/${char.maxHp}</span></div>
+            <div class="hp-box">
+    HP: <span class="hp-value" 
+          onwheel="changeHP(event, '${type}', ${index})" 
+          onclick="editHP('${type}', ${index})">
+          ${item.currentHp}/${item.maxHp}
+    </span>
+</div>
         `;
         list.appendChild(div);
     });
@@ -34,7 +40,13 @@ function renderMonsters() {
         div.innerHTML = `
             <img src="${m.img || ''}" class="avatar">
             <div><strong>${m.name}</strong><br>Инициатива: ${m.init}</div>
-            <div class="hp-box">HP: <span class="hp-value" onwheel="changeHP(event, 'monster', ${index})">${m.currentHp}/${m.maxHp}</span></div>
+            <div class="hp-box">
+    HP: <span class="hp-value" 
+          onwheel="changeHP(event, '${type}', ${index})" 
+          onclick="editHP('${type}', ${index})">
+          ${item.currentHp}/${item.maxHp}
+    </span>
+</div>
         `;
         list.appendChild(div);
     });
@@ -107,6 +119,20 @@ async function sendDataToSheets(sheet, action, data) {
     fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ sheet, action, data }) });
 }
 
+function editHP(type, index) {
+    let newVal = prompt("Введите новое значение текущих HP:");
+    if (newVal !== null && !isNaN(newVal)) {
+        if (type === 'char') {
+            characters[index].currentHp = parseInt(newVal);
+        } else {
+            monsters[index].currentHp = parseInt(newVal);
+        }
+        renderCharacters();
+        renderMonsters();
+        saveData();
+    }
+}
+
 function saveData() { localStorage.setItem('dnd_chars', JSON.stringify(characters)); }
 
 function changeBackground(event) {
@@ -151,4 +177,5 @@ window.onload = () => {
     }
 });
 };
+
 
