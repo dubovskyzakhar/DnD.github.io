@@ -23,37 +23,44 @@
     </main>
 
     <main id="settings-tab" class="tab-content">
-        <div class="settings-container">
-            
-            <div class="config-card">
-                <h3>Библиотека героев (БД)</h3>
-                <select id="db-character-select">
-                    <option value="">Загрузка списка...</option>
-                </select>
+    <div class="settings-container">
+        
+        <div class="config-row">
+            <div class="config-card flex-1">
+                <h3>Библиотека (БД)</h3>
+                <div class="select-wrapper">
+                    <select id="db-character-select">
+                        <option value="">Загрузка списка...</option>
+                    </select>
+                </div>
                 <button onclick="addFromLibrary()">Призвать из библиотеки</button>
             </div>
 
-            <div class="config-card">
+            <div class="config-card flex-1">
                 <h3>Новый герой (JSON)</h3>
                 <input type="file" id="import-json" accept=".json">
-                <button onclick="importCharacter()">Проверить и создать</button>
+                <button onclick="importCharacter()">Проверить и призвать</button>
             </div>
+        </div>
 
-            <div class="config-card">
+        <div class="config-row">
+            <div class="config-card flex-1">
                 <h3>Бестиарий (URL)</h3>
                 <input type="text" id="monster-url" placeholder="Ссылка на dnd.su или ttg.club">
                 <button onclick="addMonsterByUrl()">Призвать монстра</button>
             </div>
 
-            <div class="config-card">
+            <div class="config-card flex-1">
                 <h3>Атмосфера</h3>
                 <label>Фон приложения:</label>
                 <input type="file" id="bg-upload" onchange="changeBackground(event)">
             </div>
-
         </div>
-    </main>
+
+    </div>
+</main>
 
     <script src="script.js"></script>
 </body>
 </html>
+
