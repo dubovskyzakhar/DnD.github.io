@@ -68,33 +68,6 @@ async function loadHeroLibrary() {
     }
 }
 
-function displayHeroes(heroes) {
-    const container = document.getElementById('hero-library-list');
-    container.innerHTML = '';
-    heroes.forEach((item) => {
-        const values = Object.values(item);
-        const name = item["Имя"] || values[0];
-        const hp = parseInt(item["MaxHP"] || values[1]) || 10;
-        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
-
-        const div = document.createElement('div');
-        div.className = 'library-item';
-        div.innerHTML = `
-            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}')">
-                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} ${hp ? `<small>(HP: ${hp})</small>` : ''}</span>
-            </div>
-            <div class="lib-actions">
-                <label class="btn-lib-upload" title="Обновить фото">
-                    📷
-                    <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
-                </label>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
 function filterHeroes() {
     const query = document.getElementById('hero-search').value.toLowerCase();
     const filtered = fullHeroDatabase.filter(h => {
@@ -134,24 +107,55 @@ async function loadMonsterLibrary() {
 function displayMonsters(monsters) {
     const container = document.getElementById('monster-library-list');
     container.innerHTML = '';
+    
     monsters.forEach((item) => {
         const values = Object.values(item);
-        const name = item["Имя"] || values[0];
-        const hp = item["MaxHP"] || values[1];
-        const ac = item["AC"] || values[2];
+        // Защита: если поля нет в объекте, берем из массива значений или ставим дефолт
+        const name = (item["Имя"] || values[0] || "Монстр").replace(/'/g, "\\'"); // Экранируем кавычки в именах
+        const hp = parseInt(item["MaxHP"] || values[1]) || 0;
+        const ac = parseInt(item["AC"] || values[2]) || 0;
         const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
 
         const div = document.createElement('div');
         div.className = 'library-item';
+        // Передаем параметры как строки, чтобы избежать пустых мест в JS
         div.innerHTML = `
             <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} ${ac ? `<small>(AC: ${ac})</small>` : ''}</span>
+                <span>${name} ${ac > 0 ? `<small>(AC: ${ac})</small>` : ''}</span>
             </div>
             <div class="lib-actions">
                 <label class="btn-lib-upload" title="Обновить фото">
                     📷
                     <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event, 'Enemies')">
+                </label>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function displayHeroes(heroes) {
+    const container = document.getElementById('hero-library-list');
+    container.innerHTML = '';
+    
+    heroes.forEach((item) => {
+        const values = Object.values(item);
+        const name = (item["Имя"] || values[0] || "Герой").replace(/'/g, "\\'");
+        const hp = parseInt(item["MaxHP"] || values[1]) || 0;
+        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+
+        const div = document.createElement('div');
+        div.className = 'library-item';
+        div.innerHTML = `
+            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}')">
+                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
+                <span>${name} ${hp > 0 ? `<small>(HP: ${hp})</small>` : ''}</span>
+            </div>
+            <div class="lib-actions">
+                <label class="btn-lib-upload" title="Обновить фото">
+                    📷
+                    <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
                 </label>
             </div>
         `;
@@ -308,4 +312,5 @@ window.onload = () => {
         });
     }
 };
+
 
