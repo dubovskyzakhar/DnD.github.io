@@ -28,12 +28,16 @@
             
             <div class="config-row">
                 <div class="config-card flex-1">
-                    <h3>Библиотека героев (БД)</h3>
-                    <select id="db-character-select">
-                        <option value="">Загрузка списка...</option>
-                    </select>
-                    <button onclick="addFromLibrary()">Призвать из библиотеки</button>
-                </div>
+    <h3>Библиотека героев (БД)</h3>
+    <div class="custom-select-container" id="library-select-container">
+        <div class="selected-option" onclick="toggleLibrary()">
+            <span id="selected-text">-- Выберите героя --</span>
+        </div>
+        <div class="options-list" id="library-options">
+            </div>
+    </div>
+    <input type="hidden" id="db-character-select-value"> <button onclick="addFromLibrary()" style="margin-top: 10px;">Призвать выбранного</button>
+</div>
 
                 <div class="config-card flex-1">
                     <h3>Новый герой (JSON)</h3>
@@ -62,3 +66,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
