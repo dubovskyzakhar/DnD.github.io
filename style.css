@@ -138,3 +138,66 @@ body {
     cursor: pointer;
     font-weight: bold;
 }
+
+.custom-select-container {
+    position: relative;
+    width: 100%;
+    background: #2c1e14;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.selected-option {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.options-list {
+    display: none; /* Скрыто по умолчанию */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #2c1e14;
+    border: 1px solid var(--gold);
+    z-index: 1000;
+    max-height: 250px;
+    overflow-y: auto;
+    border-radius: 0 0 5px 5px;
+}
+
+.options-list.active {
+    display: block;
+}
+
+.option-item {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+    transition: background 0.2s;
+}
+
+.option-item:hover {
+    background: rgba(197, 160, 89, 0.2);
+}
+
+.option-item img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    object-fit: cover;
+    background: #000;
+}
+
+.option-item span {
+    font-size: 1.1rem;
+}
+
