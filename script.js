@@ -9,19 +9,15 @@ function switchTab(tabId) {
 
 function renderCombatList() {
     const list = document.getElementById('character-list');
-    if (!list) return;
     list.innerHTML = '';
-    
     combatants.sort((a, b) => b.init - a.init);
 
     combatants.forEach((unit, index) => {
         const div = document.createElement('div');
-        // Добавляем класс monster-card если это монстр
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
-        
         div.innerHTML = `
             <img src="${unit.img || ''}" class="avatar">
-            <div class="info">
+            <div>
                 <strong>${unit.name}</strong><br>
                 Инициатива: <span class="init-value" onclick="editInit(${index})">${unit.init}</span>
             </div>
@@ -37,19 +33,13 @@ function renderCombatList() {
 }
 
 function editInit(index) {
-    let newVal = prompt("Установить инициативу:", combatants[index].init);
-    if (newVal !== null && !isNaN(newVal)) {
-        combatants[index].init = parseInt(newVal);
-        saveData(); renderCombatList();
-    }
+    let newVal = prompt("Инициатива:", combatants[index].init);
+    if (newVal !== null) { combatants[index].init = parseInt(newVal); saveData(); renderCombatList(); }
 }
 
 function editHP(index) {
     let newVal = prompt("Текущее HP:", combatants[index].currentHp);
-    if (newVal !== null && !isNaN(newVal)) {
-        combatants[index].currentHp = parseInt(newVal);
-        saveData(); renderCombatList();
-    }
+    if (newVal !== null) { combatants[index].currentHp = parseInt(newVal); saveData(); renderCombatList(); }
 }
 
 function changeHP(e, index) {
@@ -60,10 +50,7 @@ function changeHP(e, index) {
 }
 
 function deleteUnit(index) {
-    if (confirm("Удалить?")) {
-        combatants.splice(index, 1);
-        saveData(); renderCombatList();
-    }
+    if (confirm("Удалить?")) { combatants.splice(index, 1); saveData(); renderCombatList(); }
 }
 
 async function importCharacter() {
@@ -75,29 +62,28 @@ async function importCharacter() {
         try {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
-            const charName = data.name?.value || data.name || "Герой";
+            const name = data.name?.value || data.name || "Герой";
 
-            // Проверка дубликатов в Google Sheets
-            const response = await fetch(`${API_URL}?sheet=Characters`);
-            const dbData = await response.json();
-            if (dbData.some(row => (row.Имя || row.name) === charName)) {
-                alert(`Персонаж "${charName}" уже есть в БД!`);
-                return;
-            }
+            // ПРОВЕРКА БД (Столбец A)
+            const resp = await fetch(`${API_URL}?sheet=Characters`);
+            const db = await resp.json();
+            const exists = db.find(r => (r["Имя"] || r["name"] || r[0]) === name);
 
-            const newChar = {
-                name: charName,
-                maxHp: data.vitality?.["hp-max"]?.value || 10,
-                currentHp: data.vitality?.["hp-max"]?.value || 10,
+            const unit = {
+                name: name,
+                maxHp: exists ? (exists["MaxHP"] || 10) : (data.vitality?.["hp-max"]?.value || 10),
+                currentHp: exists ? (exists["MaxHP"] || 10) : (data.vitality?.["hp-max"]?.value || 10),
                 init: (Math.floor(Math.random() * 20) + 1) + (data.stats?.dex?.modifier || 0),
-                img: data.avatar?.webp || "",
+                img: exists ? (exists["Фото"] || "") : (data.avatar?.webp || ""),
                 type: 'hero'
             };
 
-            combatants.push(newChar);
-            saveData(); renderCombatList();
-            await sendDataToSheets('Characters', 'add', [newChar.name, newChar.maxHp, newChar.currentHp, newChar.init, newChar.img]);
-            loadLibrary();
+            if (!exists) {
+                await sendDataToSheets('Characters', 'add', [unit.name, unit.maxHp, unit.maxHp, unit.init, unit.img]);
+            }
+
+            combatants.push(unit);
+            saveData(); renderCombatList(); switchTab('battle');
         } catch (err) { alert("Ошибка JSON!"); }
     };
     reader.readAsText(fileInput.files[0]);
@@ -106,13 +92,13 @@ async function importCharacter() {
 async function loadLibrary() {
     const select = document.getElementById('db-character-select');
     try {
-        const response = await fetch(`${API_URL}?sheet=Characters`);
-        const data = await response.json();
+        const resp = await fetch(`${API_URL}?sheet=Characters`);
+        const data = await resp.json();
         select.innerHTML = '<option value="">-- Выберите героя --</option>';
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = JSON.stringify(item);
-            opt.textContent = item.Имя || item.name;
+            opt.textContent = "👤 " + (item["Имя"] || item["name"]);
             select.appendChild(opt);
         });
     } catch (e) { select.innerHTML = '<option>Ошибка загрузки БД</option>'; }
@@ -123,11 +109,11 @@ function addFromLibrary() {
     if (!select.value) return;
     const data = JSON.parse(select.value);
     combatants.push({
-        name: data.Имя || data.name,
-        maxHp: parseInt(data.MaxHP || 10),
-        currentHp: parseInt(data.MaxHP || 10),
+        name: data["Имя"] || data["name"],
+        maxHp: parseInt(data["MaxHP"] || 10),
+        currentHp: parseInt(data["MaxHP"] || 10),
         init: Math.floor(Math.random() * 20) + 1,
-        img: data.Фото || data.img || "",
+        img: data["Фото"] || data["фото"] || "",
         type: 'hero'
     });
     saveData(); renderCombatList(); switchTab('battle');
@@ -135,20 +121,15 @@ function addFromLibrary() {
 
 async function addMonsterByUrl() {
     const urlInput = document.getElementById('monster-url');
-    if(!urlInput.value) return;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlInput.value)}`;
     try {
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        const doc = new DOMParser().parseFromString(data.contents, 'text/html');
+        const resp = await fetch(proxyUrl);
+        const d = await resp.json();
+        const doc = new DOMParser().parseFromString(d.contents, 'text/html');
         const name = doc.querySelector('h1')?.innerText || "Монстр";
-        const hpMatch = data.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i);
-        const hp = hpMatch ? parseInt(hpMatch[1]) : 50;
-        const newM = { name, maxHp: hp, currentHp: hp, init: Math.floor(Math.random() * 20) + 1, img: "", type: 'monster' };
-        combatants.push(newM);
-        saveData(); renderCombatList();
-        await sendDataToSheets('Monsters', 'add', [newM.name, newM.maxHp, newM.currentHp, newM.init, ""]);
-        urlInput.value = "";
+        const hp = parseInt(d.contents.match(/(?:Хиты|Hit Points)\s*[:]?\s*(\d+)/i)?.[1] || 50);
+        combatants.push({ name, maxHp: hp, currentHp: hp, init: Math.floor(Math.random() * 20) + 1, img: "", type: 'monster' });
+        saveData(); renderCombatList(); urlInput.value = ""; switchTab('battle');
     } catch (e) { alert("Ошибка!"); }
 }
 
@@ -168,15 +149,12 @@ function changeBackground(event) {
 }
 
 window.onload = () => {
-    const savedBg = localStorage.getItem('dnd_bg');
-    if(savedBg) document.getElementById('main-bg').style.backgroundImage = `url(${savedBg})`;
+    const bg = localStorage.getItem('dnd_bg');
+    if(bg) document.getElementById('main-bg').style.backgroundImage = `url(${bg})`;
     renderCombatList();
-    loadLibrary();
     new Sortable(document.getElementById('character-list'), { animation: 150, onEnd: () => {
-        // Логика перемещения внутри массива combatants
-        const listItems = document.querySelectorAll('.character-card');
-        const newList = [];
-        // В реальном времени синхронизируем массив с DOM
-        // (Для упрощения можно оставить просто визуально, либо пересобрать массив здесь)
+        const items = Array.from(document.querySelectorAll('.character-card strong')).map(el => el.innerText);
+        combatants.sort((a, b) => items.indexOf(a.name) - items.indexOf(b.name));
+        saveData();
     }});
 };
