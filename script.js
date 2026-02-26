@@ -165,22 +165,6 @@ async function addMonsterManual() {
 
 async function addMonsterToDB(monsterData) {
     const sheetName = 'Enemies';
-    const rowData = [
-        monsterData.name,        // 1. Название монстров
-        monsterData.hp,          // 2. Число хитов
-        monsterData.ac,          // 3. Класс доспеха
-        monsterData.type,        // 4. Тип
-        monsterData.img,         // 5. Фото
-        monsterData.description, // 6. Описание
-        monsterData.acNote,      // 7. Доп класс защиты
-        monsterData.hpNote       // 8. Доп хиты
-    ];
-    
-    await sendDataToSheets(sheetName, 'add', rowData);
-}
-
-async function addMonsterToDB(monsterData) {
-    const sheetName = 'Enemies';
     
     // Твой строгий порядок столбцов:
     // 1. Название | 2. Хиты | 3. КД | 4. Тип | 5. Фото | 6. Описание | 7. Доп КД | 8. Доп хиты
@@ -216,7 +200,7 @@ function renderCombatList() {
                 <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
                 <div class="ac-badge" onclick="editBaseAC(${index})">
                     ${totalAC}
-                    ${unit.acNote && unit.acNote.includes('мастерства') ? '<span class="pb-label">+БМ</span>' : ''}
+                    ${(unit.acNote && unit.acNote.includes('мастерства')) ? '<span class="pb-label">+БМ</span>' : ''}
                 </div>
             </div>
 
@@ -232,15 +216,16 @@ function renderCombatList() {
                 </svg>
                 <div class="hp-text-overlay">
                     <span class="hp-current">${unit.currentHp}</span>
-                    <span class="hp-divider">/</span>
+                    <span class="hp-divider"></span>
                     <span class="hp-max">${unit.maxHp}</span>
                 </div>
                 ${unit.hpNote ? `<div class="unit-note hp-note">+ ${unit.hpNote}</div>` : ''}
             </div>
 
             <div class="mod-buttons">
-                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')">🛡️</button>
-                <button class="shield-btn ${unit.mods.cover ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')">½</button>
+                <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="toggleMod(${index}, 'shield')" title="Щит +2">🛡️</button>
+                <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="toggleMod(${index}, '1/2')" title="Укрытие 1/2">½</button>
+                <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="toggleMod(${index}, '3/4')" title="Укрытие 3/4">¾</button>
             </div>
             
             <button class="delete-btn" onclick="deleteUnit(${index})">🗑️</button>
@@ -304,20 +289,19 @@ function displayMonsters(monsters) {
     
     monsters.forEach((item) => {
         const values = Object.values(item);
-        // Индексы зависят от твоей таблицы (обычно: 0-Имя, 1-HP, 2-AC, 4-Фото, 6-AC Note, 7-HP Note)
         const name = (item["Имя"] || values[0] || "Монстр").replace(/'/g, "\\'");
-        
-        // Берем сырые данные (вместе с текстом), чтобы addMonsterToCombat их распарсила
-        const hpRaw = item["MaxHP"] || values[1] || "10";
-        const acRaw = item["AC"] || values[2] || "10";
+        const hp = item["MaxHP"] || values[1] || "10";
+        const ac = item["AC"] || values[2] || "10";
         const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
+        const acNote = item["Доп КД"] || values[6] || ""; // Тянем заметки из БД
+        const hpNote = item["Доп хиты"] || values[7] || "";
 
         const div = document.createElement('div');
         div.className = 'library-item';
         div.innerHTML = `
-            <div class="lib-info" onclick="addMonsterToCombat('${name}', '${hpRaw}', '${acRaw}', '${img}')">
+            <div class="lib-info" onclick="addMonsterToCombat('${name}', '${hp}', '${ac}', '${img}', '${hpNote}', '${acNote}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} <small>(AC: ${acRaw})</small></span>
+                <span>${name} <small>(AC: ${ac})</small></span>
             </div>
             <div class="lib-actions">
                 <label class="btn-lib-upload">
@@ -519,6 +503,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
