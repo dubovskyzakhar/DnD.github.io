@@ -2,7 +2,7 @@ let characters = JSON.parse(localStorage.getItem('dnd_chars')) || [];
 let monsters = [];
 
 // ВСТАВЬТЕ СЮДА СВОЮ ССЫЛКУ ПОСЛЕ ОБНОВЛЕНИЯ РАЗВЕРТЫВАНИЯ
-const API_URL = "https://script.google.com/macros/s/...ВАШ_ID.../exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -172,3 +172,4 @@ window.onload = () => {
         }
     });
 };
+
