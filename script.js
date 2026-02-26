@@ -59,27 +59,40 @@ function changeBackground(event) {
     }
 }
 
-function addMonsterManual() {
-    // Получаем данные из полей ввода (убедись, что ID совпадают с твоим HTML)
+async function addMonsterManual() {
     const nameInput = document.getElementById('monster-name');
     const hpInput = document.getElementById('monster-hp');
     const acInput = document.getElementById('monster-ac');
     const imgInput = document.getElementById('monster-img');
 
-    // Если поля пустые, даем значения по умолчанию
     const name = nameInput ? nameInput.value : "Новый монстр";
     const hp = hpInput ? hpInput.value : "10";
     const ac = acInput ? acInput.value : "10";
     const img = (imgInput && imgInput.value) ? imgInput.value : 'https://i.imgur.com/83p7pId.png';
 
-    // Вызываем нашу "умную" функцию добавления с парсером текста
-    if (typeof addMonsterToCombat === "function") {
-        addMonsterToCombat(name, hp, ac, img);
-    } else {
-        console.error("Ошибка: Функция addMonsterToCombat не найдена!");
+    // 1. Добавляем в текущий бой (на экран)
+    addMonsterToCombat(name, hp, ac, img);
+
+    // 2. Подготавливаем данные для базы данных
+    // Важно: структура должна соответствовать тому, что ждет addMonsterToDB
+    const monsterData = {
+        name: name,
+        hp: { average: hp }, // Передаем строку как есть (с кубами, если ввели)
+        ac: [ac],            // Передаем строку как есть (с текстом, если ввели)
+        img: img,
+        type: "manual",      // Пометка, что добавлен вручную
+        trait: [{ name: "Добавлен вручную" }]
+    };
+
+    try {
+        // Вызываем твою функцию записи в БД
+        await addMonsterToDB(monsterData);
+        console.log("Монстр успешно отправлен в таблицу");
+    } catch (e) {
+        console.error("Ошибка при записи в БД:", e);
     }
 
-    // Очищаем поля после добавления
+    // Очищаем поля
     if (nameInput) nameInput.value = '';
     if (hpInput) hpInput.value = '';
     if (acInput) acInput.value = '';
@@ -418,6 +431,7 @@ window.onload = () => {
         });
     }
 };
+
 
 
 
