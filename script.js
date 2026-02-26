@@ -20,23 +20,25 @@ function renderCombatList() {
     if (!list) return;
     list.innerHTML = '';
     
-    // Сортировка по инициативе (от большего к меньшему)
     combatants.sort((a, b) => b.init - a.init);
 
     combatants.forEach((unit, index) => {
         const div = document.createElement('div');
         div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}`;
+        
+        // Проверяем наличие AC для бейджика
+        const acBadge = (unit.ac && unit.ac > 0) ? `<div class="ac-badge">${unit.ac}</div>` : '';
+        
         div.innerHTML = `
             <div style="position: relative;" class="avatar-container">
-                <img src="${unit.img || 'https://i.imgur.com/83p7pId.png'}" class="avatar" 
-                     onerror="this.src='https://i.imgur.com/83p7pId.png';">
+                <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
                 
                 <label class="upload-badge" title="Загрузить фото">
                     📷
                     <input type="file" accept="image/*" style="display:none" onchange="updateUnitPhoto(event, ${index})">
                 </label>
 
-                ${unit.ac ? `<div class="ac-badge">${unit.ac}</div>` : ''}
+                ${acBadge} 
             </div>
             <div>
                 <strong>${unit.name}</strong><br>
@@ -80,7 +82,7 @@ function displayHeroes(heroes) {
         div.innerHTML = `
             <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} <small>(HP: ${hp})</small></span>
+                <span>${name} ${hp ? `<small>(HP: ${hp})</small>` : ''}</span>
             </div>
             <div class="lib-actions">
                 <label class="btn-lib-upload" title="Обновить фото">
@@ -103,9 +105,17 @@ function filterHeroes() {
 }
 
 function addHeroToCombat(name, hp, img) {
-    combatants.push({ name, maxHp: hp, currentHp: hp, init: 0, img, type: 'hero' });
-    saveData(); renderCombatList();
-    alert(`${name} в строю!`);
+    const unit = {
+        name: name || "Безымянный герой",
+        maxHp: parseInt(hp) || 10, // Если пусто, даем 10 HP
+        currentHp: parseInt(hp) || 10,
+        init: 0,
+        img: img || 'https://i.imgur.com/83p7pId.png', // Заглушка, если нет фото
+        type: 'hero'
+    };
+    combatants.push(unit);
+    saveData();
+    renderCombatList();
 }
 
 // 4. ФУНКЦИИ МОНСТРОВ (БИБЛИОТЕКА)
@@ -136,7 +146,7 @@ function displayMonsters(monsters) {
         div.innerHTML = `
             <div class="lib-info" onclick="addMonsterToCombat('${name}', ${hp}, ${ac}, '${img}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} <small>(AC: ${ac})</small></span>
+                <span>${name} ${ac ? `<small>(AC: ${ac})</small>` : ''}</span>
             </div>
             <div class="lib-actions">
                 <label class="btn-lib-upload" title="Обновить фото">
@@ -159,9 +169,18 @@ function filterMonsters() {
 }
 
 function addMonsterToCombat(name, hp, ac, img) {
-    combatants.push({ name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'monster' });
-    saveData(); renderCombatList();
-    alert(`${name} добавлен в бой!`);
+    const unit = {
+        name: name || "Дикий монстр",
+        maxHp: parseInt(hp) || 10,
+        currentHp: parseInt(hp) || 10,
+        ac: ac ? parseInt(ac) : null, // Если AC нет, будет null
+        init: 0,
+        img: img || 'https://i.imgur.com/83p7pId.png',
+        type: 'monster'
+    };
+    combatants.push(unit);
+    saveData();
+    renderCombatList();
 }
 
 // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (HP, ИНИЦИАТИВА, ФОТО)
@@ -289,3 +308,4 @@ window.onload = () => {
         });
     }
 };
+
