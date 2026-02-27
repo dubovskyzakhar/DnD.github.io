@@ -625,8 +625,6 @@ function removeSpell(targetIdx, spellIdx) {
     // Удаляем без подтверждения
     combatants[targetIdx].activeSpells.splice(spellIdx, 1);
     
-    // Сразу очищаем линию, если мышка была над этим заклинанием
-    clearConnectionLines();
     
     saveData();
     renderCombatList();
@@ -763,6 +761,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
