@@ -14,10 +14,13 @@
     
     <nav class="main-nav">
     <button onclick="switchTab('battle')">⚔️ Бой</button>
-    <button class="add-quick-btn" onclick="quickAddUnit()" title="Быстро добавить юнита">+</button>
+    
+    <button class="add-quick-btn" onclick="dndActions.quickAddUnit()" title="Быстро добавить юнита">+</button>
+    
     <button onclick="switchTab('settings')">📜 Настройки</button>
-    <button class="danger-btn" onclick="clearAllCombatants()" title="Удалить всех">🧹 Очистить поле</button>
-    <button class="danger-btn" onclick="finishBattle()" title="Удалить только монстров">⚔️ Завершить бой</button>
+    
+    <button class="danger-btn" onclick="dndActions.clearAllCombatants()" title="Удалить всех">🧹 Очистить поле</button>
+    <button class="danger-btn" onclick="dndActions.finishBattle()" title="Удалить только монстров">⚔️ Завершить бой</button>
 </nav>
 
     <main id="battle-tab" class="tab-content active">
@@ -81,9 +84,10 @@
     </div>
 </main>
 
-    <script src="script.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
+
 
 
 
