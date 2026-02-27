@@ -16,7 +16,6 @@ const DND_SPELLS_DATA = {
     "Опутывание": "🌿", "Паутина": "🕸️", "Страх": "😱"
 };
 
-let spellCastingMode = null; // Хранит данные: кто колдует и что
 const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
 // 1. УПРАВЛЕНИЕ ВКЛАДКАМИ
@@ -61,30 +60,20 @@ function toggleStatusMenu(index) {
         // Генерируем содержимое меню (Обычные статусы + Заклинания)
 const spellsArray = Object.keys(DND_SPELLS_DATA); // Получаем массив названий
 
+// Генерируем содержимое меню
+const spellsArray = Object.keys(DND_SPELLS_DATA);
+
 menu.innerHTML = `
     <div class="status-section-title">Статусы</div>
     ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
     <div class="status-section-title">Заклинания / Метки</div>
-    ${spellsArray.map(s => `<div class="status-option spell-option" onclick="startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
+    ${spellsArray.map(s => `
+        <div class="status-option spell-option" onclick="toggleSpell(${index}, '${s}')">
+            ${DND_SPELLS_DATA[s]} ${s}
+        </div>
+    `).join('')}
 `;
     }
-}
-
-function startSpellCasting(casterIndex, spellName) {
-    spellCastingMode = { casterIndex, spellName };
-    
-    // Визуальная индикация: все карточки затухают, кроме кастера
-    document.querySelectorAll('.character-card').forEach(c => {
-        c.classList.remove('casting-source');
-        c.style.opacity = "0.5"; 
-    });
-    
-    const casterEl = document.getElementById(`unit-${casterIndex}`);
-    casterEl.classList.add('casting-source');
-    casterEl.style.opacity = "1";
-    
-    // Закрываем меню статусов сразу после выбора заклинания
-    document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -258,12 +247,7 @@ function renderCombatList() {
 
         // 2. Магические метки (Заклинания) с аватаркой кастера
         const spellIcons = unit.activeSpells.map((spell, sIdx) => `
-    <div class="spell-badge" 
-         onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx});" 
-         onmouseenter="highlightCaster(${index}, ${sIdx})" 
-         onmouseleave="resetHighlights()"
-         title="Заклинатель: ${spell.casterName}">
-        <img src="${spell.casterImg || 'https://i.imgur.com/83p7pId.png'}" class="mini-caster-avatar">
+    <div class="spell-badge" onclick="event.stopPropagation(); toggleSpell(${index}, '${spell.name}');">
         <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
         <small style="margin-left: 4px; font-weight: bold;">×</small>
     </div>
@@ -587,38 +571,9 @@ async function importCharacter() {
 
 // 1. Золотая рамка
 function selectUnit(index) {
-    if (spellCastingMode) {
-        applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
-        spellCastingMode = null; 
-        
-        // Возвращаем нормальную яркость всем карточкам
-        document.querySelectorAll('.character-card').forEach(c => {
-            c.classList.remove('casting-source');
-            c.style.opacity = "1";
-        });
-        return;
-    }
-    
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
     const target = document.getElementById(`unit-${index}`);
     if (target) target.classList.add('selected');
-}
-
-function applySpellEffect(casterIdx, targetIdx, spell) {
-    const caster = combatants[casterIdx];
-    const target = combatants[targetIdx];
-
-    if (!target.activeSpells) target.activeSpells = [];
-
-    // Добавляем объект заклинания с привязкой к кастеру
-    target.activeSpells.push({
-        name: spell,
-        casterName: caster.name,
-        casterImg: caster.img
-    });
-
-    saveData();
-    renderCombatList();
 }
 
 function removeSpell(targetIdx, spellIdx) {
@@ -635,27 +590,6 @@ function removeSpell(targetIdx, spellIdx) {
         saveData();
         renderCombatList();
     }
-}
-
-// Подсветка кастера при наведении на заклинание
-function highlightCaster(targetIndex, spellIndex) {
-    const spell = combatants[targetIndex].activeSpells[spellIndex];
-    // Находим кастера по имени
-    const casterIndex = combatants.findIndex(u => u.name === spell.casterName);
-    
-    if (casterIndex !== -1) {
-        const casterEl = document.getElementById(`unit-${casterIndex}`);
-        if (casterEl) {
-            casterEl.classList.add('casting-source'); // Используем уже готовый класс свечения
-        }
-    }
-}
-
-// Убираем подсветку
-function resetHighlights() {
-    document.querySelectorAll('.character-card').forEach(c => {
-        c.classList.remove('casting-source');
-    });
 }
 
 // 2. Быстрое добавление (кнопка +)
@@ -768,6 +702,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
