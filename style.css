@@ -628,19 +628,18 @@ body {
 
 #info-content {
     flex-grow: 1;
-    overflow: hidden; /* Обрезаем всё, что выходит за рамки */
+    overflow: hidden;
     position: relative;
     background: #fff; 
 }
 
 #info-frame {
     position: absolute;
-    /* Сдвигаем фрейм вверх, чтобы скрыть черную шапку сайта TTG */
-    top: -60px; 
+    /* Сдвигаем на 70px вверх, чтобы спрятать поиск и лого сайта TTG */
+    top: -70px; 
     left: 0;
     width: 100%;
-    /* Делаем высоту больше 100%, чтобы скомпенсировать сдвиг вверх */
-    height: calc(100% + 60px); 
+    height: calc(100% + 70px); 
     border: none;
 }
 
@@ -661,6 +660,7 @@ body {
     cursor: pointer;
     color: #2c1e14;
 }
+
 
 
 
