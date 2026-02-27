@@ -60,9 +60,6 @@ function toggleStatusMenu(index) {
         // Генерируем содержимое меню (Обычные статусы + Заклинания)
 const spellsArray = Object.keys(DND_SPELLS_DATA); // Получаем массив названий
 
-// Генерируем содержимое меню
-const spellsArray = Object.keys(DND_SPELLS_DATA);
-
 menu.innerHTML = `
     <div class="status-section-title">Статусы</div>
     ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
@@ -702,6 +699,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
