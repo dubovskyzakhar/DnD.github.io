@@ -28,67 +28,63 @@
     </main>
 
     <main id="settings-tab" class="tab-content">
-        <div class="settings-container">
-            
-            <div class="config-row">
-                <div class="config-card flex-1">
-    <h3>Герои (из БД)</h3>
-    <div class="search-container">
-        <input type="text" id="hero-search" placeholder="Поиск героя..." oninput="filterHeroes()">
-    </div>
-    <div id="hero-library-list" class="library-list">
+    <div class="settings-container">
+        
+        <h2 class="settings-group-title">🛡️ Отряд Героев</h2>
+        <div class="config-row">
+            <div class="config-card hero-section flex-1">
+                <h3>Библиотека Героев</h3>
+                <input type="text" id="hero-search" placeholder="Поиск героя..." oninput="filterHeroes()">
+                <div id="hero-library-list" class="library-list"></div>
+            </div>
+            <div class="config-card hero-section flex-1">
+                <h3>Призвать нового (JSON)</h3>
+                <input type="file" id="import-json" accept=".json">
+                <button onclick="importCharacter()">Проверить и призвать</button>
+            </div>
         </div>
-</div>
 
-                <div class="config-card flex-1">
-                    <h3>Новый герой (JSON)</h3>
-                    <input type="file" id="import-json" accept=".json">
-                    <button onclick="importCharacter()">Проверить и призвать</button>
+        <h2 class="settings-group-title">👾 Бестиарий</h2>
+        <div class="config-row">
+            <div class="config-card monster-section flex-1">
+                <h3>Список Чудовищ</h3>
+                <input type="text" id="monster-search" placeholder="Поиск монстра..." oninput="filterMonsters()">
+                <div id="monster-library-list" class="library-list"></div>
+            </div>
+            <div class="config-card monster-section flex-1">
+                <h3>Создать монстра</h3>
+                <input type="text" id="monster-name" placeholder="Имя">
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="monster-hp" placeholder="Хиты">
+                    <input type="text" id="monster-ac" placeholder="КД">
                 </div>
+                <input type="text" id="monster-img" placeholder="Ссылка на фото">
+                <small>Или загрузить JSON:</small>
+                <input type="file" id="monster-json" accept=".json">
+                <button onclick="addMonsterManual()">Сохранить в бестиарий</button>
             </div>
-
-            <div class="config-row">
-                <div class="config-card flex-1">
-    <h3>Бестиарий (из БД)</h3>
-    <div class="search-container">
-        <input type="text" id="monster-search" placeholder="Поиск монстра..." oninput="filterMonsters()">
-    </div>
-    <div id="monster-library-list" class="library-list">
         </div>
-</div>
 
-                <div class="config-card flex-1">
-    <h3>Новый монстр (JSON или Вручную)</h3>
-    <input type="text" id="monster-name" placeholder="Имя (например: Ларва)">
-    <input type="text" id="monster-hp" placeholder="Хиты (например: 9)">
-    <input type="text" id="monster-ac" placeholder="КД (например: 9)">
-    <input type="text" id="monster-img" placeholder="Ссылка на фото">
-    
-    <div style="margin: 10px 0; border-top: 1px solid var(--gold); padding-top: 10px;">
-        <small>Или выберите файл:</small>
-        <input type="file" id="monster-json" accept=".json">
-    </div>
-    
-    <button onclick="addMonsterManual()">Призвать и сохранить в БД</button>
-</div>
+        <h2 class="settings-group-title">⚙️ Инструменты</h2>
+        <div class="config-row">
+            <div class="config-card utility-section">
+                <h3>Атмосфера</h3>
+                <label>Фон приложения:</label>
+                <input type="file" id="bg-upload" onchange="changeBackground(event)">
             </div>
-
-            <div class="config-row">
-                <div class="config-card flex-1">
-                    <h3>Атмосфера</h3>
-                    <label>Фон приложения:</label>
-                    <input type="file" id="bg-upload" onchange="changeBackground(event)">
-                </div>
-                <div class="config-card flex-1" style="visibility: hidden;">
-                    </div>
+            <div class="config-card utility-section">
+                <h3>Экспорт/Импорт сессии</h3>
+                <p><small>Скоро здесь можно будет сохранить весь текущий бой в файл.</small></p>
             </div>
-
         </div>
-    </main>
+
+    </div>
+</main>
 
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
