@@ -19,6 +19,58 @@ body {
     color: white;
 }
 
+.status-section-title {
+    grid-column: 1 / -1;
+    font-size: 0.7rem;
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold);
+    margin: 5px 0;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.spell-option {
+    color: #87ceeb !important; /* Голубоватый цвет для магии */
+}
+
+.spell-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(41, 128, 185, 0.2);
+    border: 1px solid #3498db;
+    color: #ecf0f1;
+    border-radius: 14px;
+    padding: 2px 8px 2px 4px;
+    margin: 2px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.spell-badge:hover {
+    background: rgba(192, 57, 43, 0.4);
+    border-color: #e74c3c;
+}
+
+.mini-caster-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin-right: 6px;
+    border: 1px solid var(--gold);
+    object-fit: cover;
+}
+
+.spell-name-text {
+    margin-right: 4px;
+}
+
+.casting-source {
+    box-shadow: 0 0 20px #3498db !important;
+    transform: scale(1.02);
+    border: 2px solid #3498db !important;
+}
+
 .config-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -527,6 +579,7 @@ body {
     text-shadow: 0 0 12px var(--gold-bright);
     color: var(--gold-bright);
 }
+
 
 
 
