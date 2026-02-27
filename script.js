@@ -566,6 +566,7 @@ async function importCharacter() {
 
 function selectUnit(index) {
     const unit = combatants[index];
+    const url = `https://5e14.ttg.club/bestiary/${slug}`;
     
     // Визуальное выделение карточки
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
@@ -734,6 +735,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
