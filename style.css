@@ -251,7 +251,7 @@ body {
 
 /* --- НАСТРОЙКИ И БИБЛИОТЕКИ --- */
 .config-card {
-    background: rgba(0, 0, 0, 0.85);
+    background: #f2e3c9;
     padding: 20px;
     border: 2px solid var(--gold);
     border-radius: 12px;
@@ -261,7 +261,7 @@ body {
 .config-card input {
     width: 100%; box-sizing: border-box;
     padding: 10px; margin: 10px 0;
-    background: #2c1e14; color: var(--gold);
+    background: #ff4444; color: var(--gold);
     border: 1px solid var(--gold);
     font-family: 'Almendra', serif;
 }
@@ -484,6 +484,7 @@ body {
     text-shadow: 0 0 12px var(--gold-bright);
     color: var(--gold-bright);
 }
+
 
 
 
