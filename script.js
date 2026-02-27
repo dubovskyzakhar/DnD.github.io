@@ -225,10 +225,8 @@ function renderCombatList() {
         const div = document.createElement('div');
         const isDead = (parseInt(unit.currentHp) <= 0);
         
-        // Добавляем класс casting-source, если этот юнит сейчас выбирает цель для магии
-        const isCaster = (spellCastingMode && spellCastingMode.casterIndex === index);
         
-        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''} ${isCaster ? 'casting-source' : ''}`;
+        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''}`;
         div.id = `unit-${index}`;
         
         div.onclick = (e) => {
@@ -697,8 +695,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Внутри window.onload добавь:
-window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
