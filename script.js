@@ -247,12 +247,16 @@ function renderCombatList() {
 
         // 2. Магические метки (Заклинания) с аватаркой кастера
         const spellIcons = unit.activeSpells.map((spell, sIdx) => `
-            <div class="spell-badge" onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx})" title="Заклинатель: ${spell.casterName}">
-                <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
-                <span class="spell-name-text">${spell.name}</span>
-                <small>×</small>
-            </div>
-        `).join('');
+    <div class="spell-badge" 
+         onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx})" 
+         onmouseenter="drawConnectionLine(${index}, ${sIdx})" 
+         onmouseleave="clearConnectionLines()"
+         title="Заклинатель: ${spell.casterName}">
+        <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
+        <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
+        <small>×</small>
+    </div>
+`).join('');
 
         div.innerHTML = `
             <div class="avatar-container">
@@ -602,9 +606,65 @@ function applySpellEffect(casterIdx, targetIdx, spell) {
 }
 
 function removeSpell(targetIdx, spellIdx) {
-    combatants[targetIdx].activeSpells.splice(spellIdx, 1);
-    saveData();
-    renderCombatList();
+    if (confirm(`Снять эффект "${combatants[targetIdx].activeSpells[spellIdx].name}"?`)) {
+        combatants[targetIdx].activeSpells.splice(spellIdx, 1);
+        saveData();
+        renderCombatList();
+    }
+}
+
+// Функция для отрисовки линии между двумя элементами
+function drawConnectionLine(targetIndex, spellIndex) {
+    const svg = document.getElementById('connection-layer');
+    svg.innerHTML = ''; // Очищаем предыдущие линии
+
+    const targetUnit = combatants[targetIndex];
+    const spell = targetUnit.activeSpells[spellIndex];
+    
+    // Находим индекс кастера по имени (или ID, если добавишь)
+    const casterIndex = combatants.findIndex(u => u.name === spell.casterName);
+    
+    if (casterIndex === -1 || casterIndex === targetIndex) return;
+
+    const startEl = document.getElementById(`unit-${casterIndex}`);
+    const endEl = document.getElementById(`unit-${targetIndex}`);
+
+    if (startEl && endEl) {
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+
+        // Находим центры карточек
+        const x1 = startRect.left + startRect.width / 2;
+        const y1 = startRect.top + startRect.height / 2;
+        const x2 = endRect.left + endRect.width / 2;
+        const y2 = endRect.top + endRect.height / 2;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#3498db');
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('stroke-dasharray', '10,5'); // Пунктирная линия
+        line.setAttribute('opacity', '0.7');
+        
+        // Анимация "движения" пунктира
+        const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+        animate.setAttribute('attributeName', 'stroke-dashoffset');
+        animate.setAttribute('from', '100');
+        animate.setAttribute('to', '0');
+        animate.setAttribute('dur', '3s');
+        animate.setAttribute('repeatCount', 'indefinite');
+        
+        line.appendChild(animate);
+        svg.appendChild(line);
+    }
+}
+
+// Очистка линий
+function clearConnectionLines() {
+    document.getElementById('connection-layer').innerHTML = '';
 }
 
 // 2. Быстрое добавление (кнопка +)
@@ -714,6 +774,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
