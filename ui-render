@@ -1,14 +1,106 @@
 import { combatants, saveData } from './state.js';
 import { DND_SPELLS_DATA, DND_STATUSES, DEFAULT_AVATAR } from './constants.js';
 
-export function renderCombatList() {
+function renderCombatList() {
     const list = document.getElementById('character-list');
     if (!list) return;
     list.innerHTML = '';
-
+    const DEFAULT_AVATAR = 'https://i.imgur.com/83p7pId.png';
+    
     combatants.forEach((unit, index) => {
-        // ... (весь твой текущий код генерации div.character-card)
-        // Важно: добавь импорт всех вызываемых функций типа toggleStatus, removeSpell и т.д.
+        // Инициализация всех необходимых полей
+        if (!unit.mods) unit.mods = { shield: false, cover: null };
+        if (!unit.statuses) unit.statuses = [];
+        if (!unit.activeSpells) unit.activeSpells = []; // Новое: массив заклинаний
+
+        let bonus = (unit.mods.shield ? 2 : 0) + 
+                    (unit.mods.cover === '1/2' ? 2 : 0) + 
+                    (unit.mods.cover === '3/4' ? 5 : 0);
+        const totalAC = (parseInt(unit.ac) || 0) + bonus;
+
+        const div = document.createElement('div');
+        const isDead = (parseInt(unit.currentHp) <= 0);
+        
+        // Добавляем класс casting-source, если этот юнит сейчас выбирает цель для магии
+        const isCaster = (spellCastingMode && spellCastingMode.casterIndex === index);
+        
+        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''} ${isCaster ? 'casting-source' : ''}`;
+        div.id = `unit-${index}`;
+        
+        div.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.classList.contains('status-tag') && !e.target.closest('.spell-badge')) {
+                selectUnit(index);
+            }
+        };
+
+        // 1. Обычные статусы
+        const statusIcons = unit.statuses.map(s => 
+            `<span class="status-tag" onclick="event.stopPropagation(); toggleStatus(${index}, '${s}')">${s} <small>×</small></span>`
+        ).join('');
+
+        // 2. Магические метки (Заклинания) с аватаркой кастера
+        const spellIcons = unit.activeSpells.map((spell, sIdx) => `
+    <div class="spell-badge" 
+         onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx});" 
+         onmouseenter="highlightCaster(${index}, ${sIdx})" 
+         onmouseleave="resetHighlights()"
+         title="Заклинатель: ${spell.casterName}">
+        <img src="${spell.casterImg || 'https://i.imgur.com/83p7pId.png'}" class="mini-caster-avatar">
+        <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
+        <small style="margin-left: 4px; font-weight: bold;">×</small>
+    </div>
+`).join('');
+
+        div.innerHTML = `
+            <div class="avatar-container">
+                <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='${DEFAULT_AVATAR}';">
+                <div class="ac-badge" onclick="event.stopPropagation(); editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
+                    ${totalAC}
+                    ${(unit.acNote && (unit.acNote.includes('мастерства') || unit.acNote.includes('БМ'))) ? '<span class="pb-label">БМ</span>' : ''}
+                </div>
+            </div>
+
+            <div class="unit-info">
+                <div class="name-row">
+                    <strong>${unit.name}</strong>
+                    <span class="init-value" onclick="event.stopPropagation(); editInit(${index})" title="Инициатива">${unit.init}</span>
+                </div>
+                
+                <div class="status-container">
+                    <div class="active-statuses">
+                        ${statusIcons}
+                        ${spellIcons} </div>
+                    <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ Состояние</button>
+                    <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()">
+                        </div>
+                </div>
+            </div>
+
+            <div class="right-controls-group">
+                <div class="mod-buttons">
+                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, 'shield')" title="Щит (+2 КД)">🛡️</button>
+                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '1/2')" title="Укрытие 1/2 (+2 КД)">½</button>
+                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); toggleMod(${index}, '3/4')" title="Укрытие 3/4 (+5 КД)">¾</button>
+                </div>
+
+                <div class="hp-heart-container" onclick="event.stopPropagation(); editHP(${index})" onwheel="changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
+                    <svg viewBox="0 0 32 32" class="hp-heart-svg">
+                        <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
+                    </svg>
+                    <div class="hp-text-overlay">
+                        <span class="hp-current">${unit.currentHp}</span>
+                        <span class="hp-divider-slash">/</span>
+                        <span class="hp-max">${unit.maxHp}</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="clone-btn" onclick="event.stopPropagation(); cloneUnit(${index})" title="Клонировать юнита">👯</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteUnit(${index})" title="Удалить из боя">🗑️</button>
+                </div>
+            </div>
+        `;
+        list.appendChild(div);
     });
 }
 
