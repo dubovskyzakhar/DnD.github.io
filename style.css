@@ -77,9 +77,11 @@ body {
 }
 
 .casting-source {
-    box-shadow: 0 0 20px #3498db !important;
-    transform: scale(1.02);
+    box-shadow: 0 0 15px #3498db !important;
     border: 2px solid #3498db !important;
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+    z-index: 10;
 }
 
 .config-row {
@@ -590,6 +592,7 @@ body {
     text-shadow: 0 0 12px var(--gold-bright);
     color: var(--gold-bright);
 }
+
 
 
 
