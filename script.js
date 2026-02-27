@@ -6,6 +6,17 @@ const DND_STATUSES = [
     "Окаменевший", "Ослеплен", "Опутан", "Отравлен", "Очарован", 
     "Оглушен", "Ошеломлен", "Парализован", "Сбит с ног", "Схвачен"
 ];
+const DND_SPELLS_DATA = {
+    "Метка охотника": "🎯", "Порча": "💀", "Вынужденная дуэль": "🤺", 
+    "Проклятие": "🌑", "Сглаз": "🧿", "Благословение": "✨", 
+    "Огонь фей": "🧚", "Меткий удар": "🏹", "Клеймящая кара": "🔥", 
+    "Гневная кара": "💢", "Ослепляющая кара": "☀️", "Раскалённый металл": "🌡️", 
+    "Замедление": "⏳", "Ускорение": "⚡", "Подчинение личности": "🧠", 
+    "Обет": "📜", "Изгнание": "🌀", "Щит веры": "🛡️", 
+    "Опутывание": "🌿", "Паутина": "🕸️", "Страх": "😱"
+};
+
+let spellCastingMode = null; // Хранит данные: кто колдует и что
 const API_URL = "https://script.google.com/macros/s/AKfycbyWl5zL8k_cWPkXbc1O7E1YwEW9jaSFJ11Eya6IcSeXLSx724Bdw_I-ZIBluJhOv9NyLA/exec"; 
 
 // 1. УПРАВЛЕНИЕ ВКЛАДКАМИ
@@ -35,23 +46,34 @@ function toggleStatus(index, status) {
 function toggleStatusMenu(index) {
     const menu = document.getElementById(`status-menu-${index}`);
     const card = document.getElementById(`unit-${index}`);
-    const allMenus = document.querySelectorAll('.status-dropdown');
-    const allCards = document.querySelectorAll('.character-card');
     
-    // 1. Закрываем все другие меню и сбрасываем z-index у всех карточек
-    allMenus.forEach(m => {
-        if (m !== menu) m.style.display = 'none';
-    });
-    allCards.forEach(c => c.classList.remove('has-open-menu'));
+    // Закрываем другие меню
+    document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
 
-    // 2. Переключаем текущее меню
     if (menu.style.display === 'grid') {
         menu.style.display = 'none';
         card.classList.remove('has-open-menu');
     } else {
         menu.style.display = 'grid';
-        card.classList.add('has-open-menu'); // Поднимаем карточку на передний план
+        card.classList.add('has-open-menu');
+        
+        // Генерируем содержимое меню (Обычные статусы + Заклинания)
+        menu.innerHTML = `
+            <div class="status-section-title">Статусы</div>
+            ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
+            <div class="status-section-title">Заклинания / Метки</div>
+            ${DND_SPELLS.map(s => `<div class="status-option spell-option" onclick="startSpellCasting(${index}, '${s}')">✨ ${s}</div>`).join('')}
+        `;
     }
+}
+
+function startSpellCasting(casterIndex, spellName) {
+    spellCastingMode = { casterIndex, spellName };
+    alert(`Выберите цель для "${spellName}" (кликните по карточке цели)`);
+    // Визуально подсветим того, кто колдует
+    document.querySelectorAll('.character-card').forEach(c => c.classList.remove('casting-source'));
+    document.getElementById(`unit-${casterIndex}`).classList.add('casting-source');
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -193,38 +215,48 @@ function renderCombatList() {
     const DEFAULT_AVATAR = 'https://i.imgur.com/83p7pId.png';
     
     combatants.forEach((unit, index) => {
-        // Инициализация модов и статусов, если их нет
+        // Инициализация всех необходимых полей
         if (!unit.mods) unit.mods = { shield: false, cover: null };
         if (!unit.statuses) unit.statuses = [];
+        if (!unit.activeSpells) unit.activeSpells = []; // Новое: массив заклинаний
 
-        // Расчет итогового КД
         let bonus = (unit.mods.shield ? 2 : 0) + 
                     (unit.mods.cover === '1/2' ? 2 : 0) + 
                     (unit.mods.cover === '3/4' ? 5 : 0);
         const totalAC = (parseInt(unit.ac) || 0) + bonus;
 
         const div = document.createElement('div');
-// Проверяем, жив ли юнит
-const isDead = (parseInt(unit.currentHp) <= 0);
-// Добавляем класс unit-dead, если HP <= 0
-div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''}`;
+        const isDead = (parseInt(unit.currentHp) <= 0);
+        
+        // Добавляем класс casting-source, если этот юнит сейчас выбирает цель для магии
+        const isCaster = (spellCastingMode && spellCastingMode.casterIndex === index);
+        
+        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''} ${isCaster ? 'casting-source' : ''}`;
         div.id = `unit-${index}`;
         
-        // Клик по карточке — выбор юнита (золотая рамка)
         div.onclick = (e) => {
-            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.classList.contains('status-tag')) {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && !e.target.classList.contains('status-tag') && !e.target.closest('.spell-badge')) {
                 selectUnit(index);
             }
         };
 
-        // Генерация тегов статусов
+        // 1. Обычные статусы
         const statusIcons = unit.statuses.map(s => 
             `<span class="status-tag" onclick="event.stopPropagation(); toggleStatus(${index}, '${s}')">${s} <small>×</small></span>`
         ).join('');
 
+        // 2. Магические метки (Заклинания) с аватаркой кастера
+        const spellIcons = unit.activeSpells.map((spell, sIdx) => `
+            <div class="spell-badge" onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx})" title="Заклинатель: ${spell.casterName}">
+                <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
+                <span class="spell-name-text">${spell.name}</span>
+                <small>×</small>
+            </div>
+        `).join('');
+
         div.innerHTML = `
             <div class="avatar-container">
-                <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
+                <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='${DEFAULT_AVATAR}';">
                 <div class="ac-badge" onclick="event.stopPropagation(); editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
                     ${totalAC}
                     ${(unit.acNote && (unit.acNote.includes('мастерства') || unit.acNote.includes('БМ'))) ? '<span class="pb-label">БМ</span>' : ''}
@@ -238,11 +270,12 @@ div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}
                 </div>
                 
                 <div class="status-container">
-                    <div class="active-statuses">${statusIcons}</div>
+                    <div class="active-statuses">
+                        ${statusIcons}
+                        ${spellIcons} </div>
                     <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ Состояние</button>
                     <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()">
-                        ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
-                    </div>
+                        </div>
                 </div>
             </div>
 
@@ -539,9 +572,39 @@ async function importCharacter() {
 
 // 1. Золотая рамка
 function selectUnit(index) {
+    if (spellCastingMode) {
+        applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
+        spellCastingMode = null; // Сбрасываем режим
+        document.querySelectorAll('.character-card').forEach(c => c.classList.remove('casting-source'));
+        return;
+    }
+    
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
     const target = document.getElementById(`unit-${index}`);
     if (target) target.classList.add('selected');
+}
+
+function applySpellEffect(casterIdx, targetIdx, spell) {
+    const caster = combatants[casterIdx];
+    const target = combatants[targetIdx];
+
+    if (!target.activeSpells) target.activeSpells = [];
+
+    // Добавляем объект заклинания с привязкой к кастеру
+    target.activeSpells.push({
+        name: spell,
+        casterName: caster.name,
+        casterImg: caster.img
+    });
+
+    saveData();
+    renderCombatList();
+}
+
+function removeSpell(targetIdx, spellIdx) {
+    combatants[targetIdx].activeSpells.splice(spellIdx, 1);
+    saveData();
+    renderCombatList();
 }
 
 // 2. Быстрое добавление (кнопка +)
@@ -651,6 +714,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
