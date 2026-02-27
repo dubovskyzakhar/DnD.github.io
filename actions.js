@@ -1,10 +1,12 @@
-import { combatants, saveData, updateCombatants, API_URL, sendDataToSheets } from './state.js';
+// 1. Правильные импорты
+import { combatants, saveData, updateCombatants } from './state.js';
 import { renderCombatList, switchTab } from './ui-render.js';
+import { API_URL, DND_STATUSES } from './constants.js';
 
-// --- 1. УПРАВЛЕНИЕ СПИСКОМ (Удаление, Клонирование, Добавление) ---
+// --- 1. УПРАВЛЕНИЕ СПИСКОМ ---
 
 export function deleteUnit(index) {
-    if (confirm("Удалить?")) { 
+    if (confirm("Удалить этого бойца?")) { 
         combatants.splice(index, 1); 
         saveData(); 
         renderCombatList(); 
@@ -49,10 +51,10 @@ export function quickAddUnit() {
     renderCombatList();
 }
 
-// --- 2. ИЗМЕНЕНИЕ ПАРАМЕТРОВ (HP, AC, Инициатива, Статусы) ---
+// --- 2. ИЗМЕНЕНИЕ ПАРАМЕТРОВ ---
 
 export function editHP(index) {
-    let newVal = prompt("Текущее HP:", combatants[index].currentHp);
+    let newVal = prompt("Установить текущее HP:", combatants[index].currentHp);
     if (newVal !== null) { 
         combatants[index].currentHp = parseInt(newVal) || 0; 
         saveData(); 
@@ -69,21 +71,12 @@ export function changeHP(e, index) {
 }
 
 export function editInit(index) {
-    let newVal = prompt("Инициатива:", combatants[index].init);
+    let newVal = prompt("Установить инициативу:", combatants[index].init);
     if (newVal !== null) { 
         combatants[index].init = parseInt(newVal) || 0; 
-        combatants.sort((a, b) => b.init - a.init);
+        combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
         saveData(); 
         renderCombatList(); 
-    }
-}
-
-export function editBaseAC(index) {
-    let newVal = prompt("Базовый Класс Защиты:", combatants[index].ac || 10);
-    if (newVal !== null) {
-        combatants[index].ac = parseInt(newVal) || 0;
-        saveData();
-        renderCombatList();
     }
 }
 
@@ -106,12 +99,11 @@ export function toggleMod(index, modType) {
     renderCombatList();
 }
 
-// --- 3. МАГИЯ И ЭФФЕКТЫ ---
+// --- 3. МАГИЯ ---
 
 export function startSpellCasting(casterIndex, spellName) {
     window.spellCastingMode = { casterIndex, spellName };
     document.querySelectorAll('.character-card').forEach(c => {
-        c.classList.remove('casting-source');
         c.style.opacity = "0.5"; 
     });
     const casterEl = document.getElementById(`unit-${casterIndex}`);
@@ -119,7 +111,6 @@ export function startSpellCasting(casterIndex, spellName) {
         casterEl.classList.add('casting-source');
         casterEl.style.opacity = "1";
     }
-    document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
 }
 
 export function applySpellEffect(casterIdx, targetIdx, spell) {
@@ -135,64 +126,60 @@ export function applySpellEffect(casterIdx, targetIdx, spell) {
     renderCombatList();
 }
 
-// --- 4. ИМПОРТ И РАБОТА С ФОТО ---
+// --- 4. ИМПОРТ И ФОТО ---
 
 export async function importCharacter() {
     const fileInput = document.getElementById('import-json');
-    if (!fileInput.files[0]) return alert("Выбери файл JSON!");
+    if (!fileInput || !fileInput.files[0]) return alert("Выбери файл JSON!");
+    
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
             
-            const name = (data.name?.value || data.name || "Герой").toString().trim();
+            const name = (data.name?.value || data.name || "Герой").toString();
             const hp = parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10;
             const img = data.avatar?.webp || data.avatar?.jpeg || "";
             const ac = parseInt(data.attributes?.ac?.value || data.ac) || 10;
 
-            combatants.push({ name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'hero', statuses: [], activeSpells: [], mods: { shield: false, cover: null } });
+            combatants.push({ 
+                name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'hero',
+                statuses: [], activeSpells: [], mods: { shield: false, cover: null } 
+            });
             saveData();
             renderCombatList();
-            await sendDataToSheets('Characters', 'add', [name, hp, hp, 0, img, ac]);
             switchTab('battle');
-        } catch (err) { alert("Ошибка JSON героя!"); }
+        } catch (err) { alert("Ошибка чтения JSON!"); }
     };
     reader.readAsText(fileInput.files[0]);
 }
 
-export async function updateUnitPhoto(event, index) {
+export function updateUnitPhoto(event, index) {
     const file = event.target.files[0];
-    if (!file || file.size > 1024 * 1024) return alert("Файл слишком большой!");
+    if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async function(e) {
-        const base64Image = e.target.result;
-        combatants[index].img = base64Image;
+    reader.onload = function(e) {
+        combatants[index].img = e.target.result;
         saveData();
         renderCombatList();
-        const sheet = combatants[index].type === 'monster' ? 'Enemies' : 'Characters';
-        fetch(API_URL, {
-            method: 'POST', mode: 'no-cors',
-            body: JSON.stringify({ sheet, action: 'updatePhoto', name: combatants[index].name, photo: base64Image })
-        });
     };
     reader.readAsDataURL(file);
 }
 
-// --- 5. ОЧИСТКА ПОЛЯ БОЯ ---
+// --- 5. ФИНАЛ БОЯ ---
 
 export function finishBattle() {
-    if (confirm("Завершить бой? Все монстры будут удалены, герои останутся с текущими HP и статусами.")) {
+    if (confirm("Завершить бой? Все монстры будут удалены, герои останутся.")) {
         const heroesOnly = combatants.filter(unit => unit.type === 'hero');
         updateCombatants(heroesOnly);
         renderCombatList();
-        console.log("Бой завершен. Монстры удалены, герои сохранены.");
     }
 }
 
 export function clearAllCombatants() {
-    if (confirm("Вы уверены, что хотите ПОЛНОСТЬЮ очистить поле боя?")) {
+    if (confirm("ПОЛНОСТЬЮ очистить поле боя?")) {
         updateCombatants([]);
         renderCombatList();
     }
