@@ -260,8 +260,8 @@ function renderCombatList() {
         const spellIcons = unit.activeSpells.map((spell, sIdx) => `
     <div class="spell-badge" 
          onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx})" 
-         onmouseenter="drawConnectionLine(${index}, ${sIdx})" 
-         onmouseleave="clearConnectionLines()"
+         onmouseenter="highlightCaster(${index}, ${sIdx})" 
+         onmouseleave="resetHighlights()"
          title="Заклинатель: ${spell.casterName}">
         <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
         <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
@@ -632,58 +632,25 @@ function removeSpell(targetIdx, spellIdx) {
     renderCombatList();
 }
 
-// Функция для отрисовки линии между двумя элементами
-function drawConnectionLine(targetIndex, spellIndex) {
-    const svg = document.getElementById('connection-layer');
-    svg.innerHTML = ''; // Очищаем предыдущие линии
-
-    const targetUnit = combatants[targetIndex];
-    const spell = targetUnit.activeSpells[spellIndex];
-    
-    // Находим индекс кастера по имени (или ID, если добавишь)
+// Подсветка кастера при наведении на заклинание
+function highlightCaster(targetIndex, spellIndex) {
+    const spell = combatants[targetIndex].activeSpells[spellIndex];
+    // Находим кастера по имени
     const casterIndex = combatants.findIndex(u => u.name === spell.casterName);
     
-    if (casterIndex === -1 || casterIndex === targetIndex) return;
-
-    const startEl = document.getElementById(`unit-${casterIndex}`);
-    const endEl = document.getElementById(`unit-${targetIndex}`);
-
-    if (startEl && endEl) {
-        const startRect = startEl.getBoundingClientRect();
-        const endRect = endEl.getBoundingClientRect();
-
-        // Находим центры карточек
-        const x1 = startRect.left + startRect.width / 2;
-        const y1 = startRect.top + startRect.height / 2;
-        const x2 = endRect.left + endRect.width / 2;
-        const y2 = endRect.top + endRect.height / 2;
-
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y2', y2);
-        line.setAttribute('stroke', '#3498db');
-        line.setAttribute('stroke-width', '3');
-        line.setAttribute('stroke-dasharray', '10,5'); // Пунктирная линия
-        line.setAttribute('opacity', '0.7');
-        
-        // Анимация "движения" пунктира
-        const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
-        animate.setAttribute('attributeName', 'stroke-dashoffset');
-        animate.setAttribute('from', '100');
-        animate.setAttribute('to', '0');
-        animate.setAttribute('dur', '3s');
-        animate.setAttribute('repeatCount', 'indefinite');
-        
-        line.appendChild(animate);
-        svg.appendChild(line);
+    if (casterIndex !== -1) {
+        const casterEl = document.getElementById(`unit-${casterIndex}`);
+        if (casterEl) {
+            casterEl.classList.add('casting-source'); // Используем уже готовый класс свечения
+        }
     }
 }
 
-// Очистка линий
-function clearConnectionLines() {
-    document.getElementById('connection-layer').innerHTML = '';
+// Убираем подсветку
+function resetHighlights() {
+    document.querySelectorAll('.character-card').forEach(c => {
+        c.classList.remove('casting-source');
+    });
 }
 
 // 2. Быстрое добавление (кнопка +)
@@ -796,6 +763,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
