@@ -51,6 +51,26 @@ export function quickAddUnit() {
     renderCombatList();
 }
 
+export async function addMonsterManual() {
+    const name = document.getElementById('monster-name')?.value;
+    const hp = parseInt(document.getElementById('monster-hp')?.value);
+    const ac = parseInt(document.getElementById('monster-ac')?.value) || 10;
+    const img = document.getElementById('monster-img')?.value || "";
+
+    if (!name || !hp) return alert("Введите имя и ОЗ монстра!");
+
+    const rowData = [name, hp, ac, img];
+    
+    // Отправка в Google Sheets
+    await sendDataToSheets('Enemies', 'add', rowData);
+    
+    alert(`Монстр ${name} добавлен в базу!`);
+    
+    // Очистка полей
+    document.getElementById('monster-name').value = "";
+    document.getElementById('monster-hp').value = "";
+}
+
 // --- 2. ИЗМЕНЕНИЕ ПАРАМЕТРОВ ---
 
 export function editHP(index) {
