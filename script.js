@@ -259,13 +259,13 @@ function renderCombatList() {
         // 2. Магические метки (Заклинания) с аватаркой кастера
         const spellIcons = unit.activeSpells.map((spell, sIdx) => `
     <div class="spell-badge" 
-         onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx})" 
+         onclick="event.stopPropagation(); removeSpell(${index}, ${sIdx});" 
          onmouseenter="highlightCaster(${index}, ${sIdx})" 
          onmouseleave="resetHighlights()"
          title="Заклинатель: ${spell.casterName}">
-        <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
+        <img src="${spell.casterImg || 'https://i.imgur.com/83p7pId.png'}" class="mini-caster-avatar">
         <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
-        <small>×</small>
+        <small style="margin-left: 4px; font-weight: bold;">×</small>
     </div>
 `).join('');
 
@@ -622,12 +622,19 @@ function applySpellEffect(casterIdx, targetIdx, spell) {
 }
 
 function removeSpell(targetIdx, spellIdx) {
-    // Удаляем без подтверждения
-    combatants[targetIdx].activeSpells.splice(spellIdx, 1);
-    
-    
-    saveData();
-    renderCombatList();
+    // 1. Проверяем существование юнита и массива заклинаний
+    if (combatants[targetIdx] && combatants[targetIdx].activeSpells) {
+        
+        // 2. Удаляем конкретное заклинание из массива по индексу
+        combatants[targetIdx].activeSpells.splice(spellIdx, 1);
+        
+        // 3. Очищаем подсветку (на случай если мышка осталась над зоной)
+        resetHighlights();
+        
+        // 4. Сохраняем и перерисовываем
+        saveData();
+        renderCombatList();
+    }
 }
 
 // Подсветка кастера при наведении на заклинание
@@ -761,6 +768,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
