@@ -661,17 +661,17 @@ function cloneUnit(index) {
 }
 
 function nameToSlug(name) {
-    // 1. Убираем всё, что в скобках (обычно там английское название)
-    // Например: "Дух дракона [Draconic Spirit]" -> "Draconic Spirit"
+    // Извлекаем текст из скобок [Draconic Spirit] -> Draconic Spirit
     const engMatch = name.match(/\[(.*?)\]/);
     let targetName = engMatch ? engMatch[1] : name;
 
-    // 2. В нижний регистр, заменяем пробелы на подчеркивания, убираем спецсимволы
     return targetName
         .toLowerCase()
         .trim()
+        // Заменяем пробелы на подчеркивания
         .replace(/\s+/g, '_')
-        .replace(/[^\w]/g, '');
+        // Удаляем всё, что не буквы, цифры или подчеркивания
+        .replace(/[^\wа-яё]/gi, ''); 
 }
 
 // 1. ПОЛНАЯ ОЧИСТКА (Все карточки)
@@ -734,6 +734,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
