@@ -21,11 +21,23 @@
 </nav>
 
     <main id="battle-tab" class="tab-content active">
-        <div class="full-width-column">
+    <div class="battle-layout">
+        <div class="combat-column">
             <h2 class="column-title">Очередь инициативы</h2>
             <div id="character-list"></div>
         </div>
-    </main>
+
+        <div id="info-panel" class="info-column">
+            <div class="info-header">
+                <span id="info-title">Справочник</span>
+                <button onclick="closeInfoPanel()" class="close-panel-btn">×</button>
+            </div>
+            <div id="info-content">
+                <iframe id="info-frame" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+</main>
 
     <main id="settings-tab" class="tab-content">
     <div class="settings-container">
@@ -84,6 +96,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
