@@ -29,6 +29,17 @@ body {
     text-transform: uppercase;
 }
 
+#connection-layer line {
+    filter: drop-shadow(0 0 5px #3498db);
+    pointer-events: none;
+}
+
+/* Чтобы линии не дергались при скролле, 
+   лучше очищать их при начале прокрутки */
+#character-list {
+    scroll-behavior: smooth;
+}
+
 .spell-option {
     color: #87ceeb !important; /* Голубоватый цвет для магии */
 }
@@ -579,6 +590,7 @@ body {
     text-shadow: 0 0 12px var(--gold-bright);
     color: var(--gold-bright);
 }
+
 
 
 
