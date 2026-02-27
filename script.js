@@ -296,12 +296,25 @@ function renderCombatList() {
 async function loadHeroLibrary() {
     const container = document.getElementById('hero-library-list');
     if (!container) return;
+
+    // 1. Пытаемся взять данные из кэша
+    const cachedHeroes = localStorage.getItem('dnd_cache_heroes');
+    if (cachedHeroes) {
+        fullHeroDatabase = JSON.parse(cachedHeroes);
+        displayHeroes(fullHeroDatabase);
+    }
+
+    // 2. Параллельно (или если кэша нет) обновляем из сети
     try {
         const response = await fetch(`${API_URL}?sheet=Characters`);
-        fullHeroDatabase = await response.json(); 
+        const data = await response.json();
+        fullHeroDatabase = data;
+        
+        // Сохраняем свежие данные в память
+        localStorage.setItem('dnd_cache_heroes', JSON.stringify(data));
         displayHeroes(fullHeroDatabase);
     } catch (e) {
-        container.innerHTML = '<div class="library-item">Ошибка загрузки базы героев</div>';
+        if (!cachedHeroes) container.innerHTML = 'Ошибка загрузки героев';
     }
 }
 
@@ -334,12 +347,22 @@ function addHeroToCombat(name, hp, img, ac = 10) {
 async function loadMonsterLibrary() {
     const container = document.getElementById('monster-library-list');
     if (!container) return;
+
+    const cachedMonsters = localStorage.getItem('dnd_cache_monsters');
+    if (cachedMonsters) {
+        fullMonsterDatabase = JSON.parse(cachedMonsters);
+        displayMonsters(fullMonsterDatabase);
+    }
+
     try {
         const response = await fetch(`${API_URL}?sheet=Enemies`);
-        fullMonsterDatabase = await response.json();
+        const data = await response.json();
+        fullMonsterDatabase = data;
+        
+        localStorage.setItem('dnd_cache_monsters', JSON.stringify(data));
         displayMonsters(fullMonsterDatabase);
     } catch (e) {
-        container.innerHTML = 'Ошибка загрузки бестиария';
+        if (!cachedMonsters) container.innerHTML = 'Ошибка загрузки бестиария';
     }
 }
 
@@ -581,6 +604,8 @@ function selectUnit(index) {
         // Для героев можно либо закрывать, либо ничего не делать
         // closeInfoPanel(); 
     }
+
+    localStorage.setItem('dnd_last_selected_monster', index);
 }
 
 function closeInfoPanel() {
@@ -666,6 +691,12 @@ function nameToSlug(name) {
         .replace(/[^\wа-яё]/gi, ''); 
 }
 
+function refreshLibraries() {
+    localStorage.removeItem('dnd_cache_heroes');
+    localStorage.removeItem('dnd_cache_monsters');
+    location.reload(); // Перезагрузит страницу и скачает всё заново
+}
+
 // 1. ПОЛНАЯ ОЧИСТКА (Все карточки)
 function clearAllCombatants() {
     if (confirm("Вы уверены, что хотите полностью очистить поле боя?")) {
@@ -718,6 +749,11 @@ window.onload = () => {
             }
         });
     }
+
+const lastIdx = localStorage.getItem('dnd_last_selected_monster');
+if (lastIdx !== null && combatants[lastIdx]) {
+    selectUnit(parseInt(lastIdx));
+}
 };
 
 document.addEventListener('click', (e) => {
@@ -726,6 +762,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
