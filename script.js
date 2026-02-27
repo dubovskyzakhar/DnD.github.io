@@ -8,32 +8,7 @@ let spellCastingMode = null; // Хранит данные: кто колдует
 
 
 
-function toggleStatusMenu(index) {
-    const menu = document.getElementById(`status-menu-${index}`);
-    const card = document.getElementById(`unit-${index}`);
-    
-    // Закрываем другие меню
-    document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
-    document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
 
-    if (menu.style.display === 'grid') {
-        menu.style.display = 'none';
-        card.classList.remove('has-open-menu');
-    } else {
-        menu.style.display = 'grid';
-        card.classList.add('has-open-menu');
-        
-        // Генерируем содержимое меню (Обычные статусы + Заклинания)
-const spellsArray = Object.keys(DND_SPELLS_DATA); // Получаем массив названий
-
-menu.innerHTML = `
-    <div class="status-section-title">Статусы</div>
-    ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
-    <div class="status-section-title">Заклинания / Метки</div>
-    ${spellsArray.map(s => `<div class="status-option spell-option" onclick="startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
-`;
-    }
-}
 
 
 
@@ -44,18 +19,7 @@ menu.innerHTML = `
 // Функция редактирования БАЗОВОГО AC
 
 
-function changeBackground(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const url = e.target.result;
-            document.getElementById('main-bg').style.backgroundImage = `url(${url})`;
-            localStorage.setItem('dnd_bg', url);
-        };
-        reader.readAsDataURL(file);
-    }
-}
+
 
 
 
@@ -130,64 +94,7 @@ async function loadMonsterLibrary() {
     }
 }
 
-function displayMonsters(monsters) {
-    const container = document.getElementById('monster-library-list');
-    container.innerHTML = '';
-    
-    monsters.forEach((item) => {
-        const values = Object.values(item);
-        const name = (item["Имя"] || values[0] || "Монстр").replace(/'/g, "\\'");
-        const hp = item["MaxHP"] || values[1] || "10";
-        const ac = item["AC"] || values[2] || "10";
-        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
-        const acNote = item["Доп КД"] || values[6] || ""; // Тянем заметки из БД
-        const hpNote = item["Доп хиты"] || values[7] || "";
 
-        const div = document.createElement('div');
-        div.className = 'library-item';
-        div.innerHTML = `
-            <div class="lib-info" onclick="addMonsterToCombat('${name}', '${hp}', '${ac}', '${img}', '${hpNote}', '${acNote}')">
-                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} <small>(AC: ${ac})</small></span>
-            </div>
-            <div class="lib-actions">
-                <label class="btn-lib-upload">
-                    📷
-                    <input type="file" style="display:none" onchange="uploadPhotoDirect('${name}', event, 'Enemies')">
-                </label>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function displayHeroes(heroes) {
-    const container = document.getElementById('hero-library-list');
-    container.innerHTML = '';
-    
-    heroes.forEach((item) => {
-        const values = Object.values(item);
-        const name = (item["Имя"] || values[0] || "Герой").replace(/'/g, "\\'");
-        const hp = parseInt(item["MaxHP"] || values[1]) || 10;
-        const img = item["Фото"] || values[4] || 'https://i.imgur.com/83p7pId.png';
-        const ac = parseInt(item["КД"] || values[5]) || 10; // Берем из столбца F
-
-        const div = document.createElement('div');
-        div.className = 'library-item';
-        div.innerHTML = `
-            <div class="lib-info" onclick="addHeroToCombat('${name}', ${hp}, '${img}', ${ac})">
-                <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
-                <span>${name} <small>(HP: ${hp}, AC: ${ac})</small></span>
-            </div>
-            <div class="lib-actions">
-                <label class="btn-lib-upload" title="Обновить фото">
-                    📷 <input type="file" style="display:none" onchange="uploadHeroPhotoDirect('${name}', event)">
-                </label>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
 
 function filterMonsters() {
     const query = document.getElementById('monster-search').value.toLowerCase();
@@ -225,23 +132,7 @@ function uploadHeroPhotoDirect(name, event) {
 
 
 // 1. Золотая рамка
-function selectUnit(index) {
-    if (spellCastingMode) {
-        applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
-        spellCastingMode = null; 
-        
-        // Возвращаем нормальную яркость всем карточкам
-        document.querySelectorAll('.character-card').forEach(c => {
-            c.classList.remove('casting-source');
-            c.style.opacity = "1";
-        });
-        return;
-    }
-    
-    document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
-    const target = document.getElementById(`unit-${index}`);
-    if (target) target.classList.add('selected');
-}
+
 
 
 
@@ -262,25 +153,7 @@ function removeSpell(targetIdx, spellIdx) {
 }
 
 // Подсветка кастера при наведении на заклинание
-function highlightCaster(targetIndex, spellIndex) {
-    const spell = combatants[targetIndex].activeSpells[spellIndex];
-    // Находим кастера по имени
-    const casterIndex = combatants.findIndex(u => u.name === spell.casterName);
-    
-    if (casterIndex !== -1) {
-        const casterEl = document.getElementById(`unit-${casterIndex}`);
-        if (casterEl) {
-            casterEl.classList.add('casting-source'); // Используем уже готовый класс свечения
-        }
-    }
-}
 
-// Убираем подсветку
-function resetHighlights() {
-    document.querySelectorAll('.character-card').forEach(c => {
-        c.classList.remove('casting-source');
-    });
-}
 
 
 // 1. ПОЛНАЯ ОЧИСТКА (Все карточки)
@@ -346,6 +219,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
