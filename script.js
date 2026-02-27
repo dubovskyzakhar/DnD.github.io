@@ -190,6 +190,7 @@ function renderCombatList() {
     const list = document.getElementById('character-list');
     if (!list) return;
     list.innerHTML = '';
+    const DEFAULT_AVATAR = 'https://i.imgur.com/83p7pId.png';
     
     combatants.forEach((unit, index) => {
         // Инициализация модов и статусов, если их нет
@@ -223,7 +224,7 @@ div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''}
 
         div.innerHTML = `
             <div class="avatar-container">
-                <img src="${unit.img}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
+                <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='https://i.imgur.com/83p7pId.png';">
                 <div class="ac-badge" onclick="event.stopPropagation(); editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
                     ${totalAC}
                     ${(unit.acNote && (unit.acNote.includes('мастерства') || unit.acNote.includes('БМ'))) ? '<span class="pb-label">БМ</span>' : ''}
@@ -602,13 +603,13 @@ function clearAllCombatants() {
 // 2. ЗАВЕРШИТЬ БОЙ (Удалить только монстров)
 function finishBattle() {
     if (confirm("Удалить всех противников? Герои останутся.")) {
-        // Оставляем в массиве только тех, у кого тип 'hero'
+        // Оставляем только героев, статусы НЕ трогаем
         combatants = combatants.filter(unit => unit.type === 'hero');
         
-        // Сбрасываем статусы и щиты у оставшихся героев (по желанию)
+        // Сбрасываем только временные моды КД (щиты/укрытия), если нужно
+        // Если хочешь оставить и их — просто удали цикл ниже
         combatants.forEach(hero => {
             hero.mods = { shield: false, cover: null };
-            hero.statuses = [];
         });
 
         saveData();
@@ -650,6 +651,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
