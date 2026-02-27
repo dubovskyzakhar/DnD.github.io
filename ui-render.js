@@ -33,56 +33,51 @@ export function renderCombatList() {
         const bonus = (unit.mods.shield ? 2 : 0) + 
                       (unit.mods.cover === '1/2' ? 2 : 0) + 
                       (unit.mods.cover === '3/4' ? 5 : 0);
-        const totalAC = (parseInt(unit.ac) || 0) + bonus;
-        const isDead = (parseInt(unit.currentHp) <= 0);
-        const isCaster = (spellCastingMode && spellCastingMode.casterIndex === index);
 
         const div = document.createElement('div');
-        div.className = `character-card ${unit.type === 'monster' ? 'monster-card' : ''} ${isDead ? 'unit-dead' : ''} ${isCaster ? 'casting-source' : ''}`;
+        div.className = `character-card ${unit.type === 'hero' ? 'hero-card' : 'monster-card'} ${unit.currentHp <= 0 ? 'unit-dead' : ''}`;
         div.id = `unit-${index}`;
-        
-        div.onclick = (e) => {
-            if (!['BUTTON', 'INPUT', 'IMG'].includes(e.target.tagName) && !e.target.classList.contains('status-tag')) {
-                selectUnit(index);
-            }
-        };
-
-        const statusIcons = unit.statuses.map(s => 
-            `<span class="status-tag" onclick="event.stopPropagation(); dndActions.toggleStatus(${index}, '${s}')">${s} ×</span>`
-        ).join('');
-
-        const spellIcons = unit.activeSpells.map((spell, sIdx) => `
-            <div class="spell-badge" onclick="event.stopPropagation(); dndActions.removeSpell(${index}, ${sIdx});">
-                <img src="${spell.casterImg || DEFAULT_AVATAR}" class="mini-caster-avatar">
-                <span class="spell-name-text">${DND_SPELLS_DATA[spell.name] || '✨'} ${spell.name}</span>
-            </div>`).join('');
+        div.onclick = () => selectUnit(index);
 
         div.innerHTML = `
-            <div class="avatar-container">
-                <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='${DEFAULT_AVATAR}';">
-                <div class="ac-badge" onclick="event.stopPropagation(); dndActions.editBaseAC(${index})">
-                    ${totalAC}
+            <div class="card-header">
+                <input type="text" value="${unit.name}" onchange="dndActions.updateName(${index}, this.value)">
+                <div class="hp-container" onwheel="dndActions.changeHP(event, ${index})">
+                    <span class="hp-current" onclick="dndActions.editHP(${index})">${unit.currentHp}</span>
+                    <span class="hp-sep">/</span>
+                    <span class="hp-max">${unit.maxHp}</span>
                 </div>
             </div>
-            <div class="unit-info">
-                <strong>${unit.name}</strong>
-                <span class="init-value" onclick="event.stopPropagation(); dndActions.editInit(${index})">${unit.init}</span>
-                <div class="status-container">
-                    <div class="active-statuses">${statusIcons}${spellIcons}</div>
-                    <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚</button>
-                    <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()"></div>
+
+            <div class="card-body">
+                <div class="avatar-container" onclick="document.getElementById('file-${index}').click()">
+                    <img src="${unit.img || DEFAULT_AVATAR}" class="unit-avatar">
+                    <input type="file" id="file-${index}" hidden onchange="dndActions.updateUnitPhoto(event, ${index})">
+                    <div class="ac-badge" onclick="event.stopPropagation(); dndActions.editBaseAC(${index})">
+                        🛡️ ${unit.ac + bonus}
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="mod-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, 'shield')">🛡️ Щит</button>
+                    <button class="mod-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, '1/2')">½</button>
+                    <button class="mod-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, '3/4')">¾</button>
+                </div>
+
+                <div class="init-badge" onclick="event.stopPropagation(); dndActions.editInit(${index})">
+                    ⚡ ${unit.init || 0}
                 </div>
             </div>
-            <div class="right-controls-group">
-                <div class="mod-buttons">
-                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, 'shield')">🛡️</button>
+
+            <div class="card-footer">
+                <div class="status-tokens">
+                    ${unit.statuses.map(s => `<span class="status-dot" title="${s}">${s[0]}</span>`).join('')}
+                    ${unit.activeSpells.map(s => `<span class="spell-dot" title="${s.name} (от ${s.casterName})">${DND_SPELLS_DATA[s.name] || '🪄'}</span>`).join('')}
                 </div>
-                <div class="hp-heart-container" onclick="event.stopPropagation(); dndActions.editHP(${index})" onwheel="dndActions.changeHP(event, ${index})">
-                    <svg viewBox="0 0 32 32" class="hp-heart-svg"><path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121"/></svg>
-                    <div class="hp-text-overlay">${unit.currentHp}/${unit.maxHp}</div>
-                </div>
-                <button class="delete-btn" onclick="event.stopPropagation(); dndActions.deleteUnit(${index})">🗑️</button>
-            </div>`;
+                <button class="menu-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">⋮</button>
+            </div>
+            <div id="status-menu-${index}" class="status-dropdown"></div>
+        `;
         list.appendChild(div);
     });
 }
@@ -115,6 +110,9 @@ export function toggleStatusMenu(index) {
             ${DND_STATUSES.map(s => `<div class="status-option" onclick="dndActions.toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
             <div class="status-section-title">Магия</div>
             ${Object.keys(DND_SPELLS_DATA).map(s => `<div class="status-option spell-option" onclick="dndActions.startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
+            <div class="status-section-title">Управление</div>
+            <div class="status-option delete-option" onclick="dndActions.deleteUnit(${index})">Удалить</div>
+            <div class="status-option clone-option" onclick="dndActions.cloneUnit(${index})">Клон</div>
         `;
     }
 }
