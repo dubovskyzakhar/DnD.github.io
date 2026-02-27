@@ -72,10 +72,19 @@ menu.innerHTML = `
 
 function startSpellCasting(casterIndex, spellName) {
     spellCastingMode = { casterIndex, spellName };
-    alert(`Выберите цель для "${spellName}" (кликните по карточке цели)`);
-    // Визуально подсветим того, кто колдует
-    document.querySelectorAll('.character-card').forEach(c => c.classList.remove('casting-source'));
-    document.getElementById(`unit-${casterIndex}`).classList.add('casting-source');
+    
+    // Визуальная индикация: все карточки затухают, кроме кастера
+    document.querySelectorAll('.character-card').forEach(c => {
+        c.classList.remove('casting-source');
+        c.style.opacity = "0.5"; 
+    });
+    
+    const casterEl = document.getElementById(`unit-${casterIndex}`);
+    casterEl.classList.add('casting-source');
+    casterEl.style.opacity = "1";
+    
+    // Закрываем меню статусов сразу после выбора заклинания
+    document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
 }
 
 // 2. ОТРИСОВКА СПИСКА БОЯ (ЕДИНАЯ ВЕРСИЯ)
@@ -580,8 +589,13 @@ async function importCharacter() {
 function selectUnit(index) {
     if (spellCastingMode) {
         applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
-        spellCastingMode = null; // Сбрасываем режим
-        document.querySelectorAll('.character-card').forEach(c => c.classList.remove('casting-source'));
+        spellCastingMode = null; 
+        
+        // Возвращаем нормальную яркость всем карточкам
+        document.querySelectorAll('.character-card').forEach(c => {
+            c.classList.remove('casting-source');
+            c.style.opacity = "1";
+        });
         return;
     }
     
@@ -608,11 +622,14 @@ function applySpellEffect(casterIdx, targetIdx, spell) {
 }
 
 function removeSpell(targetIdx, spellIdx) {
-    if (confirm(`Снять эффект "${combatants[targetIdx].activeSpells[spellIdx].name}"?`)) {
-        combatants[targetIdx].activeSpells.splice(spellIdx, 1);
-        saveData();
-        renderCombatList();
-    }
+    // Удаляем без подтверждения
+    combatants[targetIdx].activeSpells.splice(spellIdx, 1);
+    
+    // Сразу очищаем линию, если мышка была над этим заклинанием
+    clearConnectionLines();
+    
+    saveData();
+    renderCombatList();
 }
 
 // Функция для отрисовки линии между двумя элементами
@@ -779,6 +796,7 @@ document.addEventListener('click', (e) => {
 
 // Внутри window.onload добавь:
 window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
