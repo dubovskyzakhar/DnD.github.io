@@ -1,0 +1,18 @@
+import { combatants, saveData } from './state.js';
+import { DND_SPELLS_DATA, DND_STATUSES, DEFAULT_AVATAR } from './constants.js';
+
+export function renderCombatList() {
+    const list = document.getElementById('character-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    combatants.forEach((unit, index) => {
+        // ... (весь твой текущий код генерации div.character-card)
+        // Важно: добавь импорт всех вызываемых функций типа toggleStatus, removeSpell и т.д.
+    });
+}
+
+export function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId + '-tab').classList.add('active');
+}
