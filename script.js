@@ -46,7 +46,6 @@ function toggleStatusMenu(index) {
     const menu = document.getElementById(`status-menu-${index}`);
     const card = document.getElementById(`unit-${index}`);
     
-    // Закрываем другие меню
     document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
     document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
 
@@ -57,19 +56,11 @@ function toggleStatusMenu(index) {
         menu.style.display = 'grid';
         card.classList.add('has-open-menu');
         
-        // Генерируем содержимое меню (Обычные статусы + Заклинания)
-const spellsArray = Object.keys(DND_SPELLS_DATA); // Получаем массив названий
-
-menu.innerHTML = `
-    <div class="status-section-title">Статусы</div>
-    ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
-    <div class="status-section-title">Заклинания / Метки</div>
-    ${spellsArray.map(s => `
-        <div class="status-option spell-option" onclick="toggleSpell(${index}, '${s}')">
-            ${DND_SPELLS_DATA[s]} ${s}
-        </div>
-    `).join('')}
-`;
+        // Оставляем только обычные статусы
+        menu.innerHTML = `
+            <div class="status-section-title">Статусы</div>
+            ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
+        `;
     }
 }
 
@@ -266,7 +257,7 @@ function renderCombatList() {
                 <div class="status-container">
                     <div class="active-statuses">
                         ${statusIcons}
-                        ${spellIcons} </div>
+                        } </div>
                     <button class="add-status-btn" onclick="event.stopPropagation(); toggleStatusMenu(${index})">✚ Состояние</button>
                     <div id="status-menu-${index}" class="status-dropdown" onclick="event.stopPropagation()">
                         </div>
@@ -566,28 +557,28 @@ async function importCharacter() {
 
 function selectUnit(index) {
     const unit = combatants[index];
-    const url = `https://5e14.ttg.club/bestiary/${slug}`;
-    
-    // Визуальное выделение карточки
+    if (!unit) return;
+
+    // 1. Визуальное выделение карточки
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
     const target = document.getElementById(`unit-${index}`);
     if (target) target.classList.add('selected');
 
-    // Работа с панелью информации
+    // 2. Работа с панелью информации
     const panel = document.getElementById('info-panel');
     const frame = document.getElementById('info-frame');
     const title = document.getElementById('info-title');
 
     if (unit.type === 'monster') {
+        // Генерируем ссылку
         const slug = nameToSlug(unit.name);
-        // Формируем ссылку на TTG
         const url = `https://5e14.ttg.club/bestiary/${slug}`;
         
         frame.src = url;
         title.innerText = unit.name;
         panel.classList.add('active');
     } else {
-        // Если это герой, можно либо закрыть панель, либо оставить
+        // Для героев можно либо закрывать, либо ничего не делать
         // closeInfoPanel(); 
     }
 }
@@ -735,6 +726,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
