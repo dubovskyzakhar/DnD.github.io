@@ -1,9 +1,18 @@
 import { API_URL } from './constants.js';
 
 export let combatants = JSON.parse(localStorage.getItem('dnd_combatants')) || [];
+export let spellCastingMode = null; 
+
+export function setSpellMode(mode) { spellCastingMode = mode; }
 
 export function saveData() {
     localStorage.setItem('dnd_combatants', JSON.stringify(combatants));
+}
+
+export function updateCombatants(newList) {
+    combatants.length = 0; // Очищаем массив, сохраняя ссылку
+    combatants.push(...newList);
+    saveData();
 }
 
 export async function sendDataToSheets(sheet, action, data) {
@@ -17,10 +26,4 @@ export async function sendDataToSheets(sheet, action, data) {
     } catch (e) {
         console.error("Ошибка отправки в БД:", e);
     }
-}
-
-// Функции изменения массива
-export function updateCombatants(newList) {
-    combatants = newList;
-    saveData();
 }
