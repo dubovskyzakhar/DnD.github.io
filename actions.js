@@ -3,6 +3,9 @@ import { combatants, saveData, updateCombatants } from './state.js';
 import { renderCombatList, switchTab } from './ui-render.js';
 import { API_URL, DND_STATUSES } from './constants.js';
 
+// ПРЕДПОЛОЖЕНИЕ: Функция отправки в таблицы должна быть импортирована или объявлена
+// import { sendDataToSheets } from './api-service.js';
+
 // --- 1. УПРАВЛЕНИЕ СПИСКОМ ---
 
 export function deleteUnit(index) {
@@ -15,20 +18,37 @@ export function deleteUnit(index) {
 
 export function cloneUnit(index) {
     const unit = combatants[index];
-    const count = prompt(`Сколько клонов "${unit.name}" создать?`, "1");
-    if (!count || isNaN(count)) return;
+    const countInput = prompt(`Сколько клонов "${unit.name}" создать?`, "1");
+    const count = parseInt(countInput);
+    
+    if (!count || isNaN(count) || count <= 0) return;
 
-    for (let i = 0; i < parseInt(count); i++) {
-        const baseName = unit.name.replace(/_\d+$/, "");
-        const existingCount = combatants.filter(c => c.name.startsWith(baseName)).length;
-        
-        const clone = JSON.parse(JSON.stringify(unit));
-        clone.name = `${baseName}_${existingCount + 1}`;
+    // Очищаем имя от старых индексов типа "_1", "_2"
+    const baseName = unit.name.replace(/_\d+$/, "");
+
+    for (let i = 0; i < count; i++) {
+        // Находим все текущие номера для существ с таким же базовым именем
+        const existingIndices = combatants
+            .filter(c => c.name.startsWith(baseName))
+            .map(c => {
+                const match = c.name.match(/_(\d+)$/);
+                return match ? parseInt(match[1]) : 0;
+            });
+
+        // Новый индекс — это максимальный существующий + 1
+        const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 1;
+
+        // Используем structuredClone для глубокого копирования (современный стандарт)
+        const clone = structuredClone(unit);
+        clone.name = `${baseName}_${nextIndex}`;
         clone.currentHp = clone.maxHp; 
+        clone.statuses = []; // Клоны обычно появляются без эффектов оригинала
+        clone.activeSpells = [];
         clone.mods = { shield: false, cover: null };
         
         combatants.push(clone);
     }
+    
     saveData();
     renderCombatList();
 }
@@ -52,23 +72,35 @@ export function quickAddUnit() {
 }
 
 export async function addMonsterManual() {
-    const name = document.getElementById('monster-name')?.value;
-    const hp = parseInt(document.getElementById('monster-hp')?.value);
-    const ac = parseInt(document.getElementById('monster-ac')?.value) || 10;
-    const img = document.getElementById('monster-img')?.value || "";
+    const nameEl = document.getElementById('monster-name');
+    const hpEl = document.getElementById('monster-hp');
+    const acEl = document.getElementById('monster-ac');
+    const imgEl = document.getElementById('monster-img');
 
-    if (!name || !hp) return alert("Введите имя и ОЗ монстра!");
+    const name = nameEl?.value.trim();
+    const hp = parseInt(hpEl?.value);
+    const ac = parseInt(acEl?.value) || 10;
+    const img = imgEl?.value || "";
+
+    if (!name || isNaN(hp)) return alert("Введите корректное имя и ОЗ монстра!");
 
     const rowData = [name, hp, ac, img];
     
-    // Отправка в Google Sheets
-    await sendDataToSheets('Enemies', 'add', rowData);
-    
-    alert(`Монстр ${name} добавлен в базу!`);
+    try {
+        // ВАЖНО: Убедитесь, что эта функция определена!
+        if (typeof sendDataToSheets === 'function') {
+            await sendDataToSheets('Enemies', 'add', rowData);
+            alert(`Монстр ${name} добавлен в базу!`);
+        } else {
+            console.error("Функция sendDataToSheets не найдена");
+        }
+    } catch (err) {
+        alert("Ошибка при сохранении в таблицу");
+    }
     
     // Очистка полей
-    document.getElementById('monster-name').value = "";
-    document.getElementById('monster-hp').value = "";
+    if (nameEl) nameEl.value = "";
+    if (hpEl) hpEl.value = "";
 }
 
 // --- 2. ИЗМЕНЕНИЕ ПАРАМЕТРОВ ---
@@ -76,7 +108,8 @@ export async function addMonsterManual() {
 export function editHP(index) {
     let newVal = prompt("Установить текущее HP:", combatants[index].currentHp);
     if (newVal !== null) { 
-        combatants[index].currentHp = parseInt(newVal) || 0; 
+        const hp = parseInt(newVal);
+        combatants[index].currentHp = isNaN(hp) ? combatants[index].currentHp : hp; 
         saveData(); 
         renderCombatList(); 
     }
@@ -84,7 +117,10 @@ export function editHP(index) {
 
 export function changeHP(e, index) {
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 1 : -1;
+    // Добавил поддержку Shift для быстрого изменения по 10 единиц
+    const step = e.shiftKey ? 10 : 1;
+    const delta = e.deltaY < 0 ? step : -step;
+    
     combatants[index].currentHp = Math.max(0, parseInt(combatants[index].currentHp) + delta);
     saveData(); 
     renderCombatList();
@@ -94,6 +130,7 @@ export function editInit(index) {
     let newVal = prompt("Установить инициативу:", combatants[index].init);
     if (newVal !== null) { 
         combatants[index].init = parseInt(newVal) || 0; 
+        // Сортировка по инициативе (от большего к меньшему)
         combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
         saveData(); 
         renderCombatList(); 
@@ -103,7 +140,13 @@ export function editInit(index) {
 export function toggleStatus(index, status) {
     if (!combatants[index].statuses) combatants[index].statuses = [];
     const statusIndex = combatants[index].statuses.indexOf(status);
-    statusIndex > -1 ? combatants[index].statuses.splice(statusIndex, 1) : combatants[index].statuses.push(status);
+    
+    if (statusIndex > -1) {
+        combatants[index].statuses.splice(statusIndex, 1);
+    } else {
+        combatants[index].statuses.push(status);
+    }
+    
     saveData();
     renderCombatList();
 }
@@ -112,8 +155,11 @@ export function toggleMod(index, modType) {
     const unit = combatants[index];
     if (!unit.mods) unit.mods = { shield: false, cover: null };
 
-    if (modType === 'shield') unit.mods.shield = !unit.mods.shield;
-    else unit.mods.cover = (unit.mods.cover === modType) ? null : modType;
+    if (modType === 'shield') {
+        unit.mods.shield = !unit.mods.shield;
+    } else {
+        unit.mods.cover = (unit.mods.cover === modType) ? null : modType;
+    }
 
     saveData();
     renderCombatList();
@@ -137,11 +183,14 @@ export function applySpellEffect(casterIdx, targetIdx, spell) {
     const target = combatants[targetIdx];
     const caster = combatants[casterIdx];
     if (!target.activeSpells) target.activeSpells = [];
+    
     target.activeSpells.push({
+        id: Date.now(), // Добавили ID для возможности удаления заклинания
         name: spell,
         casterName: caster.name,
         casterImg: caster.img
     });
+    
     saveData();
     renderCombatList();
 }
@@ -156,21 +205,26 @@ export async function importCharacter() {
     reader.onload = async (e) => {
         try {
             const raw = JSON.parse(e.target.result);
+            // Обработка разных форматов JSON (из Foundry VTT или своих)
             let data = (raw.data && typeof raw.data === 'string') ? JSON.parse(raw.data) : (raw.data || raw);
             
             const name = (data.name?.value || data.name || "Герой").toString();
-            const hp = parseInt(data.vitality?.["hp-max"]?.value || data.hp) || 10;
-            const img = data.avatar?.webp || data.avatar?.jpeg || "";
-            const ac = parseInt(data.attributes?.ac?.value || data.ac) || 10;
+            const hp = parseInt(data.vitality?.["hp-max"]?.value || data.hp || data.system?.attributes?.hp?.max) || 10;
+            const img = data.avatar?.webp || data.avatar?.jpeg || data.img || "";
+            const ac = parseInt(data.attributes?.ac?.value || data.ac || data.system?.attributes?.ac?.value) || 10;
 
             combatants.push({ 
                 name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'hero',
                 statuses: [], activeSpells: [], mods: { shield: false, cover: null } 
             });
+            
             saveData();
             renderCombatList();
             switchTab('battle');
-        } catch (err) { alert("Ошибка чтения JSON!"); }
+        } catch (err) { 
+            console.error(err);
+            alert("Ошибка чтения JSON! Проверьте формат файла."); 
+        }
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -194,6 +248,7 @@ export function finishBattle() {
     if (confirm("Завершить бой? Все монстры будут удалены, герои останутся.")) {
         const heroesOnly = combatants.filter(unit => unit.type === 'hero');
         updateCombatants(heroesOnly);
+        saveData(); // Важно: перезаписываем хранилище
         renderCombatList();
     }
 }
@@ -201,6 +256,7 @@ export function finishBattle() {
 export function clearAllCombatants() {
     if (confirm("ПОЛНОСТЬЮ очистить поле боя?")) {
         updateCombatants([]);
+        saveData(); // Важно: перезаписываем хранилище
         renderCombatList();
     }
 }
