@@ -1,11 +1,7 @@
-import { combatants, saveData } from './state.js';
+import { combatants, saveData, updateCombatants, API_URL } from './state.js';
 import { renderCombatList } from './ui-render.js';
 
-import { combatants, saveData, sendDataToSheets, API_URL } from './state.js';
-import { renderCombatList, switchTab } from './ui-render.js';
-import { loadHeroLibrary, loadMonsterLibrary } from './main.js';
-
-// --- 1. УПРАВЛЕНИЕ СПИСКОМ (Удаление, Клонирование, Добавление) ---
+// --- 1. УПРАВЛЕНИЕ СПИСКОМ ---
 
 export function deleteUnit(index) {
     if (confirm("Удалить?")) { 
@@ -36,19 +32,19 @@ export function cloneUnit(index) {
 }
 
 export function quickAddUnit() {
-    const name = prompt("Имя юнита:");
-    if (!name) return;
-    
-    const hp = parseInt(prompt("Максимальное HP:", "10")) || 10;
-    const ac = parseInt(prompt("Класс доспеха (AC):", "10")) || 10;
-    const isMonster = confirm("Это монстр? (ОК - Монстр, Отмена - Герой)");
-    
-    combatants.push({
-        name, maxHp: hp, currentHp: hp, ac, init: 0,
-        img: 'https://i.imgur.com/83p7pId.png',
-        type: isMonster ? 'monster' : 'hero',
+    const newUnit = {
+        name: "Новый боец",
+        maxHp: 10,
+        currentHp: 10,
+        ac: 10,
+        init: 0,
+        type: "monster",
+        img: "",
+        statuses: [],
+        activeSpells: [],
         mods: { shield: false, cover: null }
-    });
+    };
+    combatants.push(newUnit);
     saveData();
     renderCombatList();
 }
