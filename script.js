@@ -59,12 +59,14 @@ function toggleStatusMenu(index) {
         card.classList.add('has-open-menu');
         
         // Генерируем содержимое меню (Обычные статусы + Заклинания)
-        menu.innerHTML = `
-            <div class="status-section-title">Статусы</div>
-            ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
-            <div class="status-section-title">Заклинания / Метки</div>
-            ${DND_SPELLS.map(s => `<div class="status-option spell-option" onclick="startSpellCasting(${index}, '${s}')">✨ ${s}</div>`).join('')}
-        `;
+const spellsArray = Object.keys(DND_SPELLS_DATA); // Получаем массив названий
+
+menu.innerHTML = `
+    <div class="status-section-title">Статусы</div>
+    ${DND_STATUSES.map(s => `<div class="status-option" onclick="toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
+    <div class="status-section-title">Заклинания / Метки</div>
+    ${spellsArray.map(s => `<div class="status-option spell-option" onclick="startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
+`;
     }
 }
 
@@ -774,6 +776,10 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
+// Внутри window.onload добавь:
+window.addEventListener('scroll', clearConnectionLines, true);
+
 
 
 
