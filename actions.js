@@ -1,7 +1,7 @@
-import { combatants, saveData, updateCombatants, API_URL } from './state.js';
-import { renderCombatList } from './ui-render.js';
+import { combatants, saveData, updateCombatants, API_URL, sendDataToSheets } from './state.js';
+import { renderCombatList, switchTab } from './ui-render.js';
 
-// --- 1. УПРАВЛЕНИЕ СПИСКОМ ---
+// --- 1. УПРАВЛЕНИЕ СПИСКОМ (Удаление, Клонирование, Добавление) ---
 
 export function deleteUnit(index) {
     if (confirm("Удалить?")) { 
@@ -115,8 +115,10 @@ export function startSpellCasting(casterIndex, spellName) {
         c.style.opacity = "0.5"; 
     });
     const casterEl = document.getElementById(`unit-${casterIndex}`);
-    casterEl.classList.add('casting-source');
-    casterEl.style.opacity = "1";
+    if (casterEl) {
+        casterEl.classList.add('casting-source');
+        casterEl.style.opacity = "1";
+    }
     document.querySelectorAll('.status-dropdown').forEach(m => m.style.display = 'none');
 }
 
@@ -133,27 +135,7 @@ export function applySpellEffect(casterIdx, targetIdx, spell) {
     renderCombatList();
 }
 
-// --- 4. ИМПОРТ И РАБОТА С ФОТО/БАЗОЙ ---
-
-export async function addMonsterManual() {
-    const fileInput = document.getElementById('monster-json');
-    const nameField = document.getElementById('monster-name');
-
-    if (fileInput?.files[0]) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const monsterData = JSON.parse(e.target.result);
-                // ... (вся твоя логика парсинга JSON монстра)
-                // В конце вызываем:
-                // await sendDataToSheets('Enemies', 'add', rowData);
-                // renderCombatList();
-            } catch (err) { alert("Ошибка JSON монстра!"); }
-        };
-        reader.readAsText(fileInput.files[0]);
-    }
-    // ... (логика ручного ввода)
-}
+// --- 4. ИМПОРТ И РАБОТА С ФОТО ---
 
 export async function importCharacter() {
     const fileInput = document.getElementById('import-json');
@@ -169,7 +151,7 @@ export async function importCharacter() {
             const img = data.avatar?.webp || data.avatar?.jpeg || "";
             const ac = parseInt(data.attributes?.ac?.value || data.ac) || 10;
 
-            combatants.push({ name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'hero' });
+            combatants.push({ name, maxHp: hp, currentHp: hp, ac, init: 0, img, type: 'hero', statuses: [], activeSpells: [], mods: { shield: false, cover: null } });
             saveData();
             renderCombatList();
             await sendDataToSheets('Characters', 'add', [name, hp, hp, 0, img, ac]);
@@ -177,24 +159,6 @@ export async function importCharacter() {
         } catch (err) { alert("Ошибка JSON героя!"); }
     };
     reader.readAsText(fileInput.files[0]);
-}
-
-export async function uploadPhotoDirect(name, event, sheet) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const base64Image = e.target.result;
-        try {
-            await fetch(API_URL, {
-                method: 'POST', mode: 'no-cors',
-                body: JSON.stringify({ sheet, action: 'updatePhoto', name, photo: base64Image })
-            });
-            alert(`Фото обновлено!`);
-            sheet === 'Enemies' ? loadMonsterLibrary() : loadHeroLibrary();
-        } catch (err) { alert("Ошибка связи с БД"); }
-    };
-    reader.readAsDataURL(file);
 }
 
 export async function updateUnitPhoto(event, index) {
@@ -216,21 +180,13 @@ export async function updateUnitPhoto(event, index) {
     reader.readAsDataURL(file);
 }
 
-5. Очистка поля боя
-import { combatants, updateCombatants, saveData } from './state.js';
-import { renderCombatList } from './ui-render.js';
+// --- 5. ОЧИСТКА ПОЛЯ БОЯ ---
 
 export function finishBattle() {
     if (confirm("Завершить бой? Все монстры будут удалены, герои останутся с текущими HP и статусами.")) {
-        // Фильтруем список: оставляем только тех, у кого тип 'hero'
         const heroesOnly = combatants.filter(unit => unit.type === 'hero');
-        
-        // Обновляем состояние через функцию из state.js
         updateCombatants(heroesOnly);
-        
-        // Перерисовываем интерфейс
         renderCombatList();
-        
         console.log("Бой завершен. Монстры удалены, герои сохранены.");
     }
 }
