@@ -1,19 +1,16 @@
 // Импортируем всё из наших модулей
 import * as actions from './actions.js';
 import * as ui from './ui-render.js';
-import { combatants } from './state.js';
-
-/* 1. ГЛОБАЛЬНЫЕ СВЯЗИ
-  В модулях (type="module") функции не видны снаружи. 
-  Чтобы кнопки в HTML (onclick) работали, мы "прокидываем" их в объект window.
-*/
+import { combatants, updateCombatants, saveData } from './state.js';
 
 // Все функции из actions.js будут доступны через dndActions.название()
 window.dndActions = actions;
-
-// Функции управления интерфейсом
 window.switchTab = ui.switchTab;
 window.toggleStatusMenu = ui.toggleStatusMenu;
+window.changeBackground = ui.changeBackground;
+window.addMonsterManual = actions.addMonsterManual;
+
+// Функции управления интерфейсом
 window.changeBackground = ui.changeBackground;
 
 // Если у тебя в index.html есть кнопки фильтрации или поиска:
@@ -27,6 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Отрисовываем список бойцов из localStorage
     ui.renderCombatList();
+  if (actions.loadMonsterLibrary) actions.loadMonsterLibrary();
 
     // Восстанавливаем фон, если он был сохранен
     const savedBg = localStorage.getItem('dnd_bg');
@@ -46,3 +44,28 @@ window.addEventListener('DOMContentLoaded', () => {
 /* 3. ЭКСПОРТ (на случай, если другим модулям понадобится main)
 */
 export { actions, ui };
+
+function initSortable() {
+    const list = document.getElementById('character-list');
+    if (list && typeof Sortable !== 'undefined') {
+        Sortable.create(list, {
+            animation: 150,
+            handle: '.card-header', // Тянем за заголовок
+            onEnd: () => {
+                const newOrder = [];
+                document.querySelectorAll('.character-card').forEach(el => {
+                    const idx = parseInt(el.id.split('-')[1]);
+                    newOrder.push(combatants[idx]);
+                });
+                updateCombatants(newOrder);
+            }
+        });
+    }
+}
+
+const originalRender = ui.renderCombatList;
+ui.renderCombatList = function() {
+    originalRender();
+    initSortable();
+};
+
