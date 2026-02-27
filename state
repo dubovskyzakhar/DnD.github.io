@@ -3,14 +3,16 @@ import { API_URL } from './constants.js';
 export let combatants = JSON.parse(localStorage.getItem('dnd_combatants')) || [];
 export let spellCastingMode = null; 
 
-export function setSpellMode(mode) { spellCastingMode = mode; }
+export function setSpellMode(mode) { 
+    spellCastingMode = mode; 
+}
 
 export function saveData() {
     localStorage.setItem('dnd_combatants', JSON.stringify(combatants));
 }
 
 export function updateCombatants(newList) {
-    combatants.length = 0; // Очищаем массив, сохраняя ссылку
+    combatants.length = 0; 
     combatants.push(...newList);
     saveData();
 }
