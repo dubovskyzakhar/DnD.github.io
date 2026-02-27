@@ -3,7 +3,6 @@ import { DND_SPELLS_DATA, DND_STATUSES, DEFAULT_AVATAR } from './constants.js';
 
 import { combatants, spellCastingMode, setSpellMode } from './state.js';
 import { DND_STATUSES, DND_SPELLS_DATA } from './constants.js';
-import * as actions from './actions.js';
 
 // --- 1. ГЛОБАЛЬНАЯ НАВИГАЦИЯ И ФОН ---
 
@@ -59,12 +58,12 @@ export function renderCombatList() {
 
         // Генерация иконок статусов и заклинаний
         const statusIcons = unit.statuses.map(s => 
-            `<span class="status-tag" onclick="event.stopPropagation(); actions.toggleStatus(${index}, '${s}')">${s} <small>×</small></span>`
+            `<span class="status-tag" onclick="event.stopPropagation(); dndActions.toggleStatus(${index}, '${s}')">${s} <small>×</small></span>`
         ).join('');
 
         const spellIcons = unit.activeSpells.map((spell, sIdx) => `
             <div class="spell-badge" 
-                 onclick="event.stopPropagation(); actions.removeSpell(${index}, ${sIdx});" 
+                 onclick="event.stopPropagation(); dndActions.removeSpell(${index}, ${sIdx});" 
                  onmouseenter="highlightCaster(${index}, ${sIdx})" 
                  onmouseleave="resetHighlights()"
                  title="Заклинатель: ${spell.casterName}">
@@ -76,7 +75,7 @@ export function renderCombatList() {
         div.innerHTML = `
             <div class="avatar-container">
                 <img src="${unit.img || DEFAULT_AVATAR}" class="avatar" onerror="this.src='${DEFAULT_AVATAR}';">
-                <div class="ac-badge" onclick="event.stopPropagation(); actions.editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
+                <div class="ac-badge" onclick="event.stopPropagation(); dndActions.editBaseAC(${index})" title="${unit.acNote || 'Базовая защита'}">
                     ${totalAC}
                     ${(unit.acNote && (unit.acNote.includes('мастерства') || unit.acNote.includes('БМ'))) ? '<span class="pb-label">БМ</span>' : ''}
                 </div>
@@ -85,7 +84,7 @@ export function renderCombatList() {
             <div class="unit-info">
                 <div class="name-row">
                     <strong>${unit.name}</strong>
-                    <span class="init-value" onclick="event.stopPropagation(); actions.editInit(${index})" title="Инициатива">${unit.init}</span>
+                    <span class="init-value" onclick="event.stopPropagation(); dndActions.editInit(${index})" title="Инициатива">${unit.init}</span>
                 </div>
                 
                 <div class="status-container">
@@ -97,12 +96,12 @@ export function renderCombatList() {
 
             <div class="right-controls-group">
                 <div class="mod-buttons">
-                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); actions.toggleMod(${index}, 'shield')" title="Щит (+2 КД)">🛡️</button>
-                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); actions.toggleMod(${index}, '1/2')" title="Укрытие 1/2 (+2 КД)">½</button>
-                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); actions.toggleMod(${index}, '3/4')" title="Укрытие 3/4 (+5 КД)">¾</button>
+                    <button class="shield-btn ${unit.mods.shield ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, 'shield')" title="Щит (+2 КД)">🛡️</button>
+                    <button class="shield-btn ${unit.mods.cover === '1/2' ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, '1/2')" title="Укрытие 1/2 (+2 КД)">½</button>
+                    <button class="shield-btn ${unit.mods.cover === '3/4' ? 'active' : ''}" onclick="event.stopPropagation(); dndActions.toggleMod(${index}, '3/4')" title="Укрытие 3/4 (+5 КД)">¾</button>
                 </div>
 
-                <div class="hp-heart-container" onclick="event.stopPropagation(); actions.editHP(${index})" onwheel="actions.changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
+                <div class="hp-heart-container" onclick="event.stopPropagation(); dndActions.editHP(${index})" onwheel="dndActions.changeHP(event, ${index})" title="${unit.hpNote || 'Здоровье'}">
                     <svg viewBox="0 0 32 32" class="hp-heart-svg">
                         <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14,0.454c0.841-10.853,14-9.81,14-0.454 C30,20.335,16,28.261,16,28.261z" fill="#9e2121" stroke="#333" stroke-width="1"/>
                     </svg>
@@ -114,8 +113,8 @@ export function renderCombatList() {
                 </div>
                 
                 <div class="action-buttons">
-                    <button class="clone-btn" onclick="event.stopPropagation(); actions.cloneUnit(${index})" title="Клонировать">👯</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); actions.deleteUnit(${index})" title="Удалить">🗑️</button>
+                    <button class="clone-btn" onclick="event.stopPropagation(); dndActions.cloneUnit(${index})" title="Клонировать">👯</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); dndActions.deleteUnit(${index})" title="Удалить">🗑️</button>
                 </div>
             </div>`;
         list.appendChild(div);
@@ -126,7 +125,7 @@ export function renderCombatList() {
 
 export function selectUnit(index) {
     if (spellCastingMode) {
-        actions.applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
+        dndActions.applySpellEffect(spellCastingMode.casterIndex, index, spellCastingMode.spellName);
         setSpellMode(null);
         resetHighlights();
         document.querySelectorAll('.character-card').forEach(c => c.style.opacity = "1");
@@ -171,9 +170,9 @@ export function toggleStatusMenu(index) {
         const spellsArray = Object.keys(DND_SPELLS_DATA);
         menu.innerHTML = `
             <div class="status-section-title">Статусы</div>
-            ${DND_STATUSES.map(s => `<div class="status-option" onclick="actions.toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
+            ${DND_STATUSES.map(s => `<div class="status-option" onclick="dndActions.toggleStatus(${index}, '${s}')">${s}</div>`).join('')}
             <div class="status-section-title">Заклинания / Метки</div>
-            ${spellsArray.map(s => `<div class="status-option spell-option" onclick="actions.startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
+            ${spellsArray.map(s => `<div class="status-option spell-option" onclick="dndActions.startSpellCasting(${index}, '${s}')">${DND_SPELLS_DATA[s]} ${s}</div>`).join('')}
         `;
     }
 }
@@ -193,12 +192,12 @@ export function displayMonsters(monsters) {
         const div = document.createElement('div');
         div.className = 'library-item';
         div.innerHTML = `
-            <div class="lib-info" onclick="actions.addMonsterToCombat('${name}', '${hp}', '${ac}', '${img}')">
+            <div class="lib-info" onclick="dndActions.addMonsterToCombat('${name}', '${hp}', '${ac}', '${img}')">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
                 <span>${name} <small>(AC: ${ac})</small></span>
             </div>
             <div class="lib-actions">
-                <label class="btn-lib-upload">📷<input type="file" style="display:none" onchange="actions.uploadPhotoDirect('${name}', event, 'Enemies')"></label>
+                <label class="btn-lib-upload">📷<input type="file" style="display:none" onchange="dndActions.uploadPhotoDirect('${name}', event, 'Enemies')"></label>
             </div>`;
         container.appendChild(div);
     });
@@ -219,12 +218,12 @@ export function displayHeroes(heroes) {
         const div = document.createElement('div');
         div.className = 'library-item';
         div.innerHTML = `
-            <div class="lib-info" onclick="actions.addHeroToCombat('${name}', ${hp}, '${img}', ${ac})">
+            <div class="lib-info" onclick="dndActions.addHeroToCombat('${name}', ${hp}, '${img}', ${ac})">
                 <img src="${img}" onerror="this.src='https://i.imgur.com/83p7pId.png'">
                 <span>${name} <small>(HP: ${hp}, AC: ${ac})</small></span>
             </div>
             <div class="lib-actions">
-                <label class="btn-lib-upload">📷<input type="file" style="display:none" onchange="actions.uploadHeroPhotoDirect('${name}', event)"></label>
+                <label class="btn-lib-upload">📷<input type="file" style="display:none" onchange="dndActions.uploadHeroPhotoDirect('${name}', event)"></label>
             </div>`;
         container.appendChild(div);
     });
