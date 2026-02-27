@@ -593,6 +593,63 @@ body {
     color: var(--gold-bright);
 }
 
+.battle-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+.combat-column {
+    flex: 1; /* Список занимает оставшееся место */
+    min-width: 300px;
+}
+
+.info-column {
+    width: 0; /* Изначально скрыта */
+    height: calc(100vh - 120px);
+    position: sticky;
+    top: 80px;
+    background: rgba(44, 30, 20, 0.95);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    display: none; /* Скрыто */
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.3s ease;
+}
+
+/* Когда панель открыта */
+.info-column.active {
+    width: 500px;
+    display: flex;
+}
+
+#info-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white; /* Статблоки TTG обычно светлые */
+}
+
+.info-header {
+    background: var(--gold);
+    color: #2c1e14;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #2c1e14;
+}
 
 
 
