@@ -219,3 +219,29 @@ export async function updateUnitPhoto(event, index) {
     };
     reader.readAsDataURL(file);
 }
+
+5. Очистка поля боя
+import { combatants, updateCombatants, saveData } from './state.js';
+import { renderCombatList } from './ui-render.js';
+
+export function finishBattle() {
+    if (confirm("Завершить бой? Все монстры будут удалены, герои останутся с текущими HP и статусами.")) {
+        // Фильтруем список: оставляем только тех, у кого тип 'hero'
+        const heroesOnly = combatants.filter(unit => unit.type === 'hero');
+        
+        // Обновляем состояние через функцию из state.js
+        updateCombatants(heroesOnly);
+        
+        // Перерисовываем интерфейс
+        renderCombatList();
+        
+        console.log("Бой завершен. Монстры удалены, герои сохранены.");
+    }
+}
+
+export function clearAllCombatants() {
+    if (confirm("Вы уверены, что хотите ПОЛНОСТЬЮ очистить поле боя?")) {
+        updateCombatants([]);
+        renderCombatList();
+    }
+}
