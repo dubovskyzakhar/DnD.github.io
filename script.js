@@ -564,11 +564,37 @@ async function importCharacter() {
     reader.readAsText(fileInput.files[0]);
 }
 
-// 1. Золотая рамка
 function selectUnit(index) {
+    const unit = combatants[index];
+    
+    // Визуальное выделение карточки
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
     const target = document.getElementById(`unit-${index}`);
     if (target) target.classList.add('selected');
+
+    // Работа с панелью информации
+    const panel = document.getElementById('info-panel');
+    const frame = document.getElementById('info-frame');
+    const title = document.getElementById('info-title');
+
+    if (unit.type === 'monster') {
+        const slug = nameToSlug(unit.name);
+        // Формируем ссылку на TTG
+        const url = `https://5e14.ttg.club/bestiary/${slug}`;
+        
+        frame.src = url;
+        title.innerText = unit.name;
+        panel.classList.add('active');
+    } else {
+        // Если это герой, можно либо закрыть панель, либо оставить
+        // closeInfoPanel(); 
+    }
+}
+
+function closeInfoPanel() {
+    const panel = document.getElementById('info-panel');
+    panel.classList.remove('active');
+    document.getElementById('info-frame').src = 'about:blank';
 }
 
 function removeSpell(targetIdx, spellIdx) {
@@ -634,6 +660,20 @@ function cloneUnit(index) {
     renderCombatList();
 }
 
+function nameToSlug(name) {
+    // 1. Убираем всё, что в скобках (обычно там английское название)
+    // Например: "Дух дракона [Draconic Spirit]" -> "Draconic Spirit"
+    const engMatch = name.match(/\[(.*?)\]/);
+    let targetName = engMatch ? engMatch[1] : name;
+
+    // 2. В нижний регистр, заменяем пробелы на подчеркивания, убираем спецсимволы
+    return targetName
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^\w]/g, '');
+}
+
 // 1. ПОЛНАЯ ОЧИСТКА (Все карточки)
 function clearAllCombatants() {
     if (confirm("Вы уверены, что хотите полностью очистить поле боя?")) {
@@ -694,6 +734,7 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.character-card').forEach(c => c.classList.remove('has-open-menu'));
     }
 });
+
 
 
 
